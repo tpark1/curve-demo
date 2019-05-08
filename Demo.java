@@ -11,7 +11,9 @@ public class Demo {
   Graphics g;
   ArrayList<Point> points1;
   ArrayList<Point> points2;
-  float step = 0.001f;
+  ArrayList<Point> curve1;
+  ArrayList<Point> curve2;
+  float step = 0.0005f;
   JFrame frame;
   JTextArea textArea;
   int curCurve = -1;
@@ -20,14 +22,13 @@ public class Demo {
   public Demo() {
     points1 = new ArrayList<>();
     points2 = new ArrayList<>();
+    curve1 = new ArrayList<>();
+    curve2 = new ArrayList<>();
 
     frame = new JFrame("Demo");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    // frame.setSize(250, 200);
-    // frame.setSize((int)Toolkit.getDefaultToolkit().getScreenSize().getWidth(), (int)Toolkit.getDefaultToolkit().getScreenSize().getHeight());
     frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
     frame.setLocationRelativeTo(null);
-
     addComponentsToPaneAndDisplay(frame.getContentPane());
   }
 
@@ -78,6 +79,17 @@ public class Demo {
     drawButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
         textArea.setText("Curve drawn");
+        if (curCurve == 1) {
+          points1.add(points1.get(0)); // to wrap around
+          drawCurve(points1, curve1);
+        }
+        else if (curCurve == 2) {
+          points2.add(points2.get(0)); // to wrap around
+          drawCurve(points2, curve2);
+        }
+        else {
+          textArea.setText("Select a curve first!");
+        }
       }
     });
     buttons.add(editButton);
@@ -88,6 +100,7 @@ public class Demo {
     textArea = new JTextArea("Welcome! \nPress Curve 1 or Curve 2 and start plotting points!");
     JScrollPane scrollPane = new JScrollPane(textArea);
     textArea.setEditable(false);
+    textArea.setFont(textArea.getFont().deriveFont(20f));
 
     // add everything to contentPane and display
     contentPane.add(display, BorderLayout.CENTER);
@@ -115,16 +128,17 @@ public class Demo {
   private class KeyLis extends KeyAdapter {
     @Override
     public void keyPressed(KeyEvent e) {
-      // e.consume();
       if (e.getKeyChar() == 'q') { // close window
         frame.dispose();
       }
       else if(e.getKeyChar() == 'g') {
         if (curCurve == 1) {
-          drawCurve(points1);
+          points1.add(points1.get(0)); // to wrap around
+          drawCurve(points1, curve1);
         }
         else if (curCurve == 2) {
-          drawCurve(points2);
+          points2.add(points2.get(0)); // to wrap around
+          drawCurve(points2, curve2);
         }
         else {
           textArea.setText("Select a curve first!");
@@ -152,55 +166,37 @@ public class Demo {
     }
   }
 
-  public void addPoint(Graphics g, int x, int y, ArrayList<Point> points) {
+  private void addPoint(Graphics g, int x, int y, ArrayList<Point> points) {
     Graphics2D g2d = (Graphics2D) g;
     g2d.drawOval(x, y, 10, 10);
     points.add(new Point(x,y));
   }
 
-  public void clearFrame() {
+  private void clearFrame() {
     points1 = new ArrayList<>();
     points2 = new ArrayList<>();
     g.clearRect(0, 0, (int)frame.getSize().getWidth(), (int)frame.getSize().getHeight());
   }
 
-  private void drawCurve(ArrayList<Point> points){
+  private void drawCurve(ArrayList<Point> points, ArrayList<Point> curve){
+    curve = new ArrayList<>(); // erase old points
     if(points.size() > 1){
       float t = 0;
       while(t <= 1){
-        computeBezier(t, points);
+        computeBezier(t, points, curve);
         t += step;
       }
     }
   }
 
-  // Factorial function
-  private static int factorial(int n) {
-    int result = 1;
-    for (int i = 1; i <= n; i++) {
-      result *= i;
-    }
-    return result;
-  }
-
-  // Function that computes the binomial coefficent. Utilizes fact that in binomial coefficent, one of the factorials in denominator
-  // will always cancel out with terms in numerator
-  private static double binomialCoefficient(int n, int i) {
-    int numerator = 1;
-    for (int j = n; j>i; j--) {
-      numerator *= j;
-    }
-    return numerator / factorial(n-i);
-  }
-
   // Function that computes the location of point at time t
   // We use points.size()-1 for binomialCoefficient because there is one more point than segment
-  private void computeBezier(float t, ArrayList<Point> points) {
+  private void computeBezier(float t, ArrayList<Point> points, ArrayList<Point> curve) {
     double x = 0;
     double y = 0;
     double coefficients[] = new double[points.size()];
     for (int i = 0; i<points.size(); i++) {
-      coefficients[i] = binomialCoefficient(points.size()-1, i) * Math.pow(1-t, points.size()-1-i) * Math.pow(t, i);
+      coefficients[i] = UtilityFunctions.binomialCoefficient(points.size()-1, i) * Math.pow(1-t, points.size()-1-i) * Math.pow(t, i);
     }
 
     for(int i = 0; i < points.size();  i++){
@@ -208,7 +204,51 @@ public class Demo {
       y += coefficients[i] * points.get(i).y;
     }
     g.drawOval((int)x, (int)y, pointRadius, pointRadius);
+    curve.add(new Point((int)x, (int)y));
   }
+
+  // private void trackFront(ArrayList<Point> curve) {
+  //   // ArrayList<double> slopes = new ArrayList<>();
+  //
+  //   // approximate first derivative with Central Difference method
+  //   // use Forward and Backward Differences for first and last points
+  //   double firstD[] = new double[curve.size()];
+  //   for (int i = 0; i<curve.size(); i++) {
+  //     if (i == 0) {
+  //       firstD[i] = (curve.get(i+1) - curve.get(i))/step;
+  //     }
+  //     else if(i == curve.size()-1) {
+  //       firstD[i] = (curve.get(i) - curve.get(i-1))/step;
+  //     }
+  //     else {
+  //       firstD[i] = (curve.get(i+1) - curve.get(i-1))/(2*step);
+  //     }
+  //   }
+  //
+  //   // approximate all second derivatives with Central Difference, approximating the numerator
+  //   // Again, use Forward and Backward Differences for first and last points
+  //   double secondD[] = new double[curve.size()];
+  //   for (int i = 0; i<curve.size(); i++) {
+  //     if (i == 0) {
+  //       secondD[i] = (firstD[i+1] - firstD[i])/step;
+  //     }
+  //     else if(i == curve.size()-1) {
+  //       secondD[i] = (firstD[i] - firstD[i-1])/step;
+  //     }
+  //     else {
+  //       secondD[i] = (firstD[i+1] - 2*firstD[i] + firstD[i-1])/(step*step);
+  //     }
+  //   }
+  //
+  //   double curvature[] = new double[curve.size()];
+  //   for (int i = 0; i<curve.size(); i++) {
+  //     curvature[i] = UtilityFunctions.crossProductMagnitude(firstD[i], secondD[i]) / Math.pow(UtilityFunctions.magnitude(firstD[i]), 3);
+  //   }
+  //
+  //
+  //
+  //
+  // }
 
   public static void main(String[] args) {
     Demo demo = new Demo();
