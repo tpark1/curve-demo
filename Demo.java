@@ -27,6 +27,8 @@ public class Demo {
   int controlPointRadius = 10;
   double epsilon = 3.0f;
 
+  JPanel display;
+
   public Demo() {
     points1 = new ArrayList<>();
     points2 = new ArrayList<>();
@@ -38,22 +40,51 @@ public class Demo {
     frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
     frame.setLocationRelativeTo(null);
 
-    timer = new Timer(40, new ActionListener() {
+    timer = new Timer(1, new ActionListener() {
       public void actionPerformed(ActionEvent e) {
         // g.clearRect(0, 0, (int)frame.getSize().getWidth(), (int)frame.getSize().getHeight());
+        if (curCurve == 1) {
+          // for(int i = 0; i < 100; i++) {
+          // ArrayList<Point> oldCurve = curve1;
+          // hmm(curve1);
+          curve1 = trackFront(curve1);
+          // hmm(oldCurve);
+          // g.setColor(Color.red);
+          // redrawCurve(curve1);
+          display.repaint();
+          // }
+        }
+        else if (curCurve == 2) {
+          // for(int i = 0; i < 100; i++) {
+          curve2 = trackFront(curve2);
+          // }
+        }
+        else {
+          textArea.setText("Select a curve first!");
+        }
+        // display.repaint();
         // redrawCurve(curve1);
-        frame.getContentPane().validate();
-
-        frame.getContentPane().repaint();
+        //
+        // frame.getContentPane().validate();
+        // frame.getContentPane().repaint();
       }
     });
 
     addComponentsToPaneAndDisplay(frame.getContentPane());
   }
 
+  // this might work when csf is correct since there shouldn't be as much overlap
+  // there still will be overlap though...
+  private void hmm(ArrayList<Point> curve) {
+    g.setColor(display.getBackground());
+    for (Point p : curve) {
+      g.drawOval(p.x, p.y, pointRadius, pointRadius);
+    }
+  }
+
   private void addComponentsToPaneAndDisplay(Container contentPane) {
     // area to display curves
-    JPanel display = new JPanel();
+    display = new JPanel();
 
     // buttonPanel on the right
     JPanel buttonPanel = new JPanel();
@@ -116,21 +147,7 @@ public class Demo {
       public void actionPerformed(ActionEvent e) {
         textArea.setText("Shortening");
         timer.start();
-        if (curCurve == 1) {
-          for(int i = 0; i < 100; i++) {
-            curve1 = trackFront(curve1);
 
-          }
-        }
-        else if (curCurve == 2) {
-          for(int i = 0; i < 100; i++) {
-            curve2 = trackFront(curve2);
-
-          }
-        }
-        else {
-          textArea.setText("Select a curve first!");
-        }
       }
     });
     JButton convoluteButton = new JButton("Convolute");
@@ -157,10 +174,18 @@ public class Demo {
         }
       }
     });
+    JButton refreshButton = new JButton("Refresh");
+    refreshButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        frame.getContentPane().validate();
+        frame.getContentPane().repaint();
+      }
+    });
     buttons.add(editButton);
     buttons.add(drawButton);
     buttons.add(shortenButton);
     buttons.add(convoluteButton);
+    buttons.add(refreshButton);
     buttonPanel.add(buttons);
 
     // text area to display messages at the bottom
@@ -184,6 +209,7 @@ public class Demo {
     drawButton.setFocusable(false);
     shortenButton.setFocusable(false);
     convoluteButton.setFocusable(false);
+    refreshButton.setFocusable(false);
     buttons.setFocusable(false);
     textArea.setFocusable(false);
     buttonPanel.setFocusable(false);
@@ -202,6 +228,7 @@ public class Demo {
     public void keyPressed(KeyEvent e) {
       if (e.getKeyChar() == 'q') { // close window
         frame.dispose();
+        System.exit(0);
       }
       else if(e.getKeyChar() == 'g') {
         if (curCurve == 1) {
@@ -219,7 +246,6 @@ public class Demo {
       else if(e.getKeyChar() == 'c') {
         clearFrame();
       }
-      // frame.getContentPane().repaint();
     }
   }
 
@@ -302,95 +328,103 @@ public class Demo {
   // CHECK INTERACCTIVE DEMO TO SEE HOW HE DID CURVE SHORTENING
   // Think I should just calculate derivatives without thinking about t
   private ArrayList<Point> trackFront(ArrayList<Point> curve) {
-    System.out.println(curve.get(0));
-    System.out.println(curve.get(1));
-    System.out.println(curve.get(2));
-    System.out.println(curve.get(3));
-    System.out.println(curve.get(4));
-    // approximate first derivative with Central Difference method
-    // use Forward and Backward Differences for first and last points
-    Point2D.Double firstD[] = new Point2D.Double[curve.size()];
+
+    ArrayList<Point> output = new ArrayList<>();
+    Point a = new Point(0, 5);
     for (int i = 0; i<curve.size(); i++) {
-      if (i == 0) {
-        Point p1 = curve.get(i+1);
-        Point p2 = curve.get(i);
-        firstD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
-      }
-      else if(i == curve.size()-1) {
-        Point p1 = curve.get(i);
-        Point p2 = curve.get(i-1);
-        firstD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
-      }
-      else {
-        Point p1 = curve.get(i+1);
-        Point p2 = curve.get(i-1);
-        firstD[i] = new Point2D.Double((p2.x - p1.x)/(2*step), (p2.y - p1.y)/(2*step));
-      }
+      output.add(UtilityFunctions.add(a, curve.get(i)));
     }
-    int factor = 10;
+    return output;
 
-    firstD = UtilityFunctions.rescale(firstD, factor);
-
-    // approximate all second derivatives with Central Difference, approximating the numerator
-    // Again, use Forward and Backward Differences for first and last points
-    Point2D.Double secondD[] = new Point2D.Double[curve.size()];
-    for (int i = 0; i<curve.size(); i++) {
-      if (i == 0) {
-        Point2D.Double p1 = firstD[i+1];
-        Point2D.Double p2 = firstD[i];
-        secondD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
-      }
-      else if(i == curve.size()-1) {
-        Point2D.Double p1 = firstD[i];
-        Point2D.Double p2 = firstD[i-1];
-        secondD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
-      }
-      else {
-        Point2D.Double p1 = firstD[i+1];
-        Point2D.Double p2 = firstD[i-1];
-        secondD[i] = new Point2D.Double((p2.x - p1.x)/(2*step), (p2.y - p1.y)/(2*step));
-      }
-    }
-
-    secondD = UtilityFunctions.rescale(secondD, factor);
-
-
-    double curvature[] = new double[curve.size()];
-    for (int i = 0; i<curve.size(); i++) {
-      curvature[i] = UtilityFunctions.crossProductMagnitude(firstD[i], secondD[i]) / Math.pow(UtilityFunctions.magnitude(firstD[i]), 3);
-      // if (curvature[i] < 0) {
-      //   curvature[i] = Math.floor(factor * curvature[i]);
-      // }
-      // else {
-      //   curvature[i] = factor * Math.ceil(curvature[i]);
-      // }
-    }
-
-
-
-    for (int i = 0;i<5 ; i++) {
-      System.out.println(firstD[i]);
-      System.out.println(secondD[i]);
-      System.out.println(curvature[i]);
-
-    }
-
-    // we note that the tangent vector values have been calculated with firstD and the
-    // derivative of the tangent vectors have been calculated with secondD, so secondD = normalVectors
-    ArrayList<Point> newPoints = new ArrayList<>();
-    for (int i = 0; i<curve.size(); i++) {
-      // move point
-      Point p = curve.get(i);
-      newPoints.add(new Point((int)(p.x + secondD[i].x * curvature[i]), (int)(p.y + secondD[i].y * curvature[i])));
-    }
-
-    for (int i = 0; i<5; i++) {
-      System.out.println(newPoints.get(i));
-    }
-
-
-    // redrawCurve(newPoints);
-    return newPoints;
+    // System.out.println(curve.get(0));
+    // System.out.println(curve.get(1));
+    // System.out.println(curve.get(2));
+    // System.out.println(curve.get(3));
+    // System.out.println(curve.get(4));
+    // // approximate first derivative with Central Difference method
+    // // use Forward and Backward Differences for first and last points
+    // Point2D.Double firstD[] = new Point2D.Double[curve.size()];
+    // for (int i = 0; i<curve.size(); i++) {
+    //   if (i == 0) {
+    //     Point p1 = curve.get(i+1);
+    //     Point p2 = curve.get(i);
+    //     firstD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
+    //   }
+    //   else if(i == curve.size()-1) {
+    //     Point p1 = curve.get(i);
+    //     Point p2 = curve.get(i-1);
+    //     firstD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
+    //   }
+    //   else {
+    //     Point p1 = curve.get(i+1);
+    //     Point p2 = curve.get(i-1);
+    //     firstD[i] = new Point2D.Double((p2.x - p1.x)/(2*step), (p2.y - p1.y)/(2*step));
+    //   }
+    // }
+    // int factor = 10;
+    //
+    // firstD = UtilityFunctions.rescale(firstD, factor);
+    //
+    // // approximate all second derivatives with Central Difference, approximating the numerator
+    // // Again, use Forward and Backward Differences for first and last points
+    // Point2D.Double secondD[] = new Point2D.Double[curve.size()];
+    // for (int i = 0; i<curve.size(); i++) {
+    //   if (i == 0) {
+    //     Point2D.Double p1 = firstD[i+1];
+    //     Point2D.Double p2 = firstD[i];
+    //     secondD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
+    //   }
+    //   else if(i == curve.size()-1) {
+    //     Point2D.Double p1 = firstD[i];
+    //     Point2D.Double p2 = firstD[i-1];
+    //     secondD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
+    //   }
+    //   else {
+    //     Point2D.Double p1 = firstD[i+1];
+    //     Point2D.Double p2 = firstD[i-1];
+    //     secondD[i] = new Point2D.Double((p2.x - p1.x)/(2*step), (p2.y - p1.y)/(2*step));
+    //   }
+    // }
+    //
+    // secondD = UtilityFunctions.rescale(secondD, factor);
+    //
+    //
+    // double curvature[] = new double[curve.size()];
+    // for (int i = 0; i<curve.size(); i++) {
+    //   curvature[i] = UtilityFunctions.crossProductMagnitude(firstD[i], secondD[i]) / Math.pow(UtilityFunctions.magnitude(firstD[i]), 3);
+    //   // if (curvature[i] < 0) {
+    //   //   curvature[i] = Math.floor(factor * curvature[i]);
+    //   // }
+    //   // else {
+    //   //   curvature[i] = factor * Math.ceil(curvature[i]);
+    //   // }
+    // }
+    //
+    //
+    //
+    // for (int i = 0;i<5 ; i++) {
+    //   System.out.println(firstD[i]);
+    //   System.out.println(secondD[i]);
+    //   System.out.println(curvature[i]);
+    //
+    // }
+    //
+    // // we note that the tangent vector values have been calculated with firstD and the
+    // // derivative of the tangent vectors have been calculated with secondD, so secondD = normalVectors
+    // ArrayList<Point> newPoints = new ArrayList<>();
+    // for (int i = 0; i<curve.size(); i++) {
+    //   // move point
+    //   Point p = curve.get(i);
+    //   newPoints.add(new Point((int)(p.x + secondD[i].x * curvature[i]), (int)(p.y + secondD[i].y * curvature[i])));
+    // }
+    //
+    // for (int i = 0; i<5; i++) {
+    //   System.out.println(newPoints.get(i));
+    // }
+    //
+    //
+    // // redrawCurve(newPoints);
+    // return newPoints;
   }
 
   private ArrayList<Point> convoluteCurves() throws IOException {
