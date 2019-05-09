@@ -4,20 +4,28 @@ import java.util.Random;
 import javax.swing.*;
 import java.awt.event.*;
 import java.awt.*;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.io.*;
 
 public class Demo {
 
   Graphics g;
+  Timer timer;
   ArrayList<Point> points1;
   ArrayList<Point> points2;
+  ArrayList<Point> points3;
   ArrayList<Point> curve1;
   ArrayList<Point> curve2;
-  float step = 0.0005f;
+  ArrayList<Point> curve3;
+  float step = 0.001f;
   JFrame frame;
   JTextArea textArea;
   int curCurve = -1;
   int pointRadius = 1;
+  int controlPointRadius = 10;
+  double epsilon = 3.0f;
 
   public Demo() {
     points1 = new ArrayList<>();
@@ -29,6 +37,17 @@ public class Demo {
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
     frame.setLocationRelativeTo(null);
+
+    timer = new Timer(40, new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        // g.clearRect(0, 0, (int)frame.getSize().getWidth(), (int)frame.getSize().getHeight());
+        // redrawCurve(curve1);
+        frame.getContentPane().validate();
+
+        frame.getContentPane().repaint();
+      }
+    });
+
     addComponentsToPaneAndDisplay(frame.getContentPane());
   }
 
@@ -81,11 +100,57 @@ public class Demo {
         textArea.setText("Curve drawn");
         if (curCurve == 1) {
           points1.add(points1.get(0)); // to wrap around
-          drawCurve(points1, curve1);
+          curve1 = drawCurve(points1);
         }
         else if (curCurve == 2) {
           points2.add(points2.get(0)); // to wrap around
-          drawCurve(points2, curve2);
+          curve2 = drawCurve(points2);
+        }
+        else {
+          textArea.setText("Select a curve first!");
+        }
+      }
+    });
+    JButton shortenButton = new JButton("Shorten");
+    shortenButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        textArea.setText("Shortening");
+        timer.start();
+        if (curCurve == 1) {
+          for(int i = 0; i < 100; i++) {
+            curve1 = trackFront(curve1);
+
+          }
+        }
+        else if (curCurve == 2) {
+          for(int i = 0; i < 100; i++) {
+            curve2 = trackFront(curve2);
+
+          }
+        }
+        else {
+          textArea.setText("Select a curve first!");
+        }
+      }
+    });
+    JButton convoluteButton = new JButton("Convolute");
+    convoluteButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        textArea.setText("Convoluting");
+        if (curCurve == 1 || curCurve == 2) {
+          try {
+            points3 = convoluteCurves();
+
+          }
+          catch(Exception ex) {
+            System.out.println(ex.getMessage());
+          }
+          System.out.println("Point3: " + points3.size());
+          for (Point p : points3) {
+            System.out.println(p.x + " " + p.y);
+          }
+          drawPoints(points3);
+          drawCurve(points3);
         }
         else {
           textArea.setText("Select a curve first!");
@@ -94,6 +159,8 @@ public class Demo {
     });
     buttons.add(editButton);
     buttons.add(drawButton);
+    buttons.add(shortenButton);
+    buttons.add(convoluteButton);
     buttonPanel.add(buttons);
 
     // text area to display messages at the bottom
@@ -115,6 +182,8 @@ public class Demo {
     checkBoxes.setFocusable(false);
     editButton.setFocusable(false);
     drawButton.setFocusable(false);
+    shortenButton.setFocusable(false);
+    convoluteButton.setFocusable(false);
     buttons.setFocusable(false);
     textArea.setFocusable(false);
     buttonPanel.setFocusable(false);
@@ -122,6 +191,9 @@ public class Demo {
     display.addKeyListener(new KeyLis());
     display.addMouseListener(new MouseLis());
     g = display.getGraphics();
+
+
+    // timer.start();
   }
 
   // Key listener class for swing
@@ -134,11 +206,11 @@ public class Demo {
       else if(e.getKeyChar() == 'g') {
         if (curCurve == 1) {
           points1.add(points1.get(0)); // to wrap around
-          drawCurve(points1, curve1);
+          curve1 = drawCurve(points1);
         }
         else if (curCurve == 2) {
           points2.add(points2.get(0)); // to wrap around
-          drawCurve(points2, curve2);
+          curve2 = drawCurve(points2);
         }
         else {
           textArea.setText("Select a curve first!");
@@ -147,6 +219,7 @@ public class Demo {
       else if(e.getKeyChar() == 'c') {
         clearFrame();
       }
+      // frame.getContentPane().repaint();
     }
   }
 
@@ -168,7 +241,7 @@ public class Demo {
 
   private void addPoint(Graphics g, int x, int y, ArrayList<Point> points) {
     Graphics2D g2d = (Graphics2D) g;
-    g2d.drawOval(x, y, 10, 10);
+    g2d.fillOval(x, y, controlPointRadius, controlPointRadius);
     points.add(new Point(x,y));
   }
 
@@ -178,20 +251,38 @@ public class Demo {
     g.clearRect(0, 0, (int)frame.getSize().getWidth(), (int)frame.getSize().getHeight());
   }
 
-  private void drawCurve(ArrayList<Point> points, ArrayList<Point> curve){
-    curve = new ArrayList<>(); // erase old points
+  private void drawPoints(ArrayList<Point> points) {
+    Graphics2D g2d = (Graphics2D) g;
+    for (Point p : points) {
+      g2d.fillOval(p.x, p.y, controlPointRadius, controlPointRadius);
+    }
+  }
+
+  private ArrayList<Point> drawCurve(ArrayList<Point> points){
+    ArrayList<Point> curve = new ArrayList<>();
     if(points.size() > 1){
       float t = 0;
       while(t <= 1){
-        computeBezier(t, points, curve);
+        Point p = computeBezier(t, points, curve);
+        curve.add(p);
         t += step;
       }
     }
+    return curve;
+  }
+
+  private void redrawCurve(ArrayList<Point> curve)  {
+    // g.clearRect(0, 0, (int)frame.getSize().getWidth(), (int)frame.getSize().getHeight());
+    for (Point p : curve) {
+      g.drawOval(p.x, p.y, pointRadius, pointRadius);
+    }
+    // frame.getContentPane().validate();
+    // frame.getContentPane().repaint();
   }
 
   // Function that computes the location of point at time t
   // We use points.size()-1 for binomialCoefficient because there is one more point than segment
-  private void computeBezier(float t, ArrayList<Point> points, ArrayList<Point> curve) {
+  private Point computeBezier(float t, ArrayList<Point> points, ArrayList<Point> curve) {
     double x = 0;
     double y = 0;
     double coefficients[] = new double[points.size()];
@@ -204,51 +295,215 @@ public class Demo {
       y += coefficients[i] * points.get(i).y;
     }
     g.drawOval((int)x, (int)y, pointRadius, pointRadius);
-    curve.add(new Point((int)x, (int)y));
+    return new Point((int)x, (int)y);
   }
 
-  // private void trackFront(ArrayList<Point> curve) {
-  //   // ArrayList<double> slopes = new ArrayList<>();
-  //
-  //   // approximate first derivative with Central Difference method
-  //   // use Forward and Backward Differences for first and last points
-  //   double firstD[] = new double[curve.size()];
-  //   for (int i = 0; i<curve.size(); i++) {
-  //     if (i == 0) {
-  //       firstD[i] = (curve.get(i+1) - curve.get(i))/step;
-  //     }
-  //     else if(i == curve.size()-1) {
-  //       firstD[i] = (curve.get(i) - curve.get(i-1))/step;
-  //     }
-  //     else {
-  //       firstD[i] = (curve.get(i+1) - curve.get(i-1))/(2*step);
-  //     }
-  //   }
-  //
-  //   // approximate all second derivatives with Central Difference, approximating the numerator
-  //   // Again, use Forward and Backward Differences for first and last points
-  //   double secondD[] = new double[curve.size()];
-  //   for (int i = 0; i<curve.size(); i++) {
-  //     if (i == 0) {
-  //       secondD[i] = (firstD[i+1] - firstD[i])/step;
-  //     }
-  //     else if(i == curve.size()-1) {
-  //       secondD[i] = (firstD[i] - firstD[i-1])/step;
-  //     }
-  //     else {
-  //       secondD[i] = (firstD[i+1] - 2*firstD[i] + firstD[i-1])/(step*step);
-  //     }
-  //   }
-  //
-  //   double curvature[] = new double[curve.size()];
-  //   for (int i = 0; i<curve.size(); i++) {
-  //     curvature[i] = UtilityFunctions.crossProductMagnitude(firstD[i], secondD[i]) / Math.pow(UtilityFunctions.magnitude(firstD[i]), 3);
-  //   }
-  //
-  //
-  //
-  //
-  // }
+
+  // CHECK INTERACCTIVE DEMO TO SEE HOW HE DID CURVE SHORTENING
+  // Think I should just calculate derivatives without thinking about t
+  private ArrayList<Point> trackFront(ArrayList<Point> curve) {
+    System.out.println(curve.get(0));
+    System.out.println(curve.get(1));
+    System.out.println(curve.get(2));
+    System.out.println(curve.get(3));
+    System.out.println(curve.get(4));
+    // approximate first derivative with Central Difference method
+    // use Forward and Backward Differences for first and last points
+    Point2D.Double firstD[] = new Point2D.Double[curve.size()];
+    for (int i = 0; i<curve.size(); i++) {
+      if (i == 0) {
+        Point p1 = curve.get(i+1);
+        Point p2 = curve.get(i);
+        firstD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
+      }
+      else if(i == curve.size()-1) {
+        Point p1 = curve.get(i);
+        Point p2 = curve.get(i-1);
+        firstD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
+      }
+      else {
+        Point p1 = curve.get(i+1);
+        Point p2 = curve.get(i-1);
+        firstD[i] = new Point2D.Double((p2.x - p1.x)/(2*step), (p2.y - p1.y)/(2*step));
+      }
+    }
+    int factor = 10;
+
+    firstD = UtilityFunctions.rescale(firstD, factor);
+
+    // approximate all second derivatives with Central Difference, approximating the numerator
+    // Again, use Forward and Backward Differences for first and last points
+    Point2D.Double secondD[] = new Point2D.Double[curve.size()];
+    for (int i = 0; i<curve.size(); i++) {
+      if (i == 0) {
+        Point2D.Double p1 = firstD[i+1];
+        Point2D.Double p2 = firstD[i];
+        secondD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
+      }
+      else if(i == curve.size()-1) {
+        Point2D.Double p1 = firstD[i];
+        Point2D.Double p2 = firstD[i-1];
+        secondD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
+      }
+      else {
+        Point2D.Double p1 = firstD[i+1];
+        Point2D.Double p2 = firstD[i-1];
+        secondD[i] = new Point2D.Double((p2.x - p1.x)/(2*step), (p2.y - p1.y)/(2*step));
+      }
+    }
+
+    secondD = UtilityFunctions.rescale(secondD, factor);
+
+
+    double curvature[] = new double[curve.size()];
+    for (int i = 0; i<curve.size(); i++) {
+      curvature[i] = UtilityFunctions.crossProductMagnitude(firstD[i], secondD[i]) / Math.pow(UtilityFunctions.magnitude(firstD[i]), 3);
+      // if (curvature[i] < 0) {
+      //   curvature[i] = Math.floor(factor * curvature[i]);
+      // }
+      // else {
+      //   curvature[i] = factor * Math.ceil(curvature[i]);
+      // }
+    }
+
+
+
+    for (int i = 0;i<5 ; i++) {
+      System.out.println(firstD[i]);
+      System.out.println(secondD[i]);
+      System.out.println(curvature[i]);
+
+    }
+
+    // we note that the tangent vector values have been calculated with firstD and the
+    // derivative of the tangent vectors have been calculated with secondD, so secondD = normalVectors
+    ArrayList<Point> newPoints = new ArrayList<>();
+    for (int i = 0; i<curve.size(); i++) {
+      // move point
+      Point p = curve.get(i);
+      newPoints.add(new Point((int)(p.x + secondD[i].x * curvature[i]), (int)(p.y + secondD[i].y * curvature[i])));
+    }
+
+    for (int i = 0; i<5; i++) {
+      System.out.println(newPoints.get(i));
+    }
+
+
+    // redrawCurve(newPoints);
+    return newPoints;
+  }
+
+  private ArrayList<Point> convoluteCurves() throws IOException {
+    g.setColor(Color.green);
+
+    // System.out.println("Control Points 1");
+    // for (Point p : points1) {
+    //   System.out.println(p.x + ", " + p.y);
+    // }
+    //
+    // System.out.println("Control Points 2");
+    // for (Point p : points2) {
+    //   System.out.println(p.x + ", " + p.y);
+    // }
+
+
+    ArrayList<Point> convolution = new ArrayList<>();
+
+    // first compute slopes of curve2
+    double slopes[] = new double[curve2.size()];
+    for (int i = 0; i<curve2.size(); i++) {
+      slopes[i] = UtilityFunctions.test(curve2, i);
+    }
+
+    BufferedWriter writer = new BufferedWriter(new FileWriter("D:\\New folder\\swarthmore\\senior\\geometry\\curve-demo\\temp.txt"));
+
+    String fileContent = "";
+    for (int i = 0; i<slopes.length; i++) {
+      fileContent += "\n";
+      fileContent += (Double.toString(curve2.get(i).x) + ", " + Double.toString(curve2.get(i).y));
+      fileContent += "\n";
+      fileContent += Double.toString(slopes[i]);
+    }
+    writer.write(fileContent);
+    writer.close();
+
+
+    // now jump into convolution
+    for (int i = 0; i<points1.size(); i++) {
+      // find slope of cur ctrl point.
+      double slope;
+      if (i == 0) {
+        slope = UtilityFunctions.slope(points1.get(points1.size()-2), points1.get(i+1));
+      }
+      else if (i == points1.size()-1) {
+        slope = UtilityFunctions.slope(points1.get(i-1), points1.get(1));
+      }
+      else {
+        slope = UtilityFunctions.slope(points1.get(i-1), points1.get(i+1));
+      }
+      // System.out.println("The slope of the " + i + "th point is: " + slope);
+
+      // find points in curve2 that are parallel
+      ArrayList<Point> candidates = new ArrayList<>();
+      for (int j = 0; j<curve2.size(); j++) {
+        if (j == 0) {
+          if ((slopes[slopes.length-1] > slope) && (slopes[j] < slope)) {
+            if ((slopes[j] - slope < epsilon)) {
+              candidates.add(curve2.get(j));
+            }
+          }
+          else if ((slopes[slopes.length-1] < slope) && (slopes[j] > slope)) {
+            if ((slopes[j] - slope < epsilon)) {
+              candidates.add(curve2.get(j));
+            }
+          }
+        }
+        else {
+          if ((slopes[j-1] > slope) && (slopes[j] < slope)) {
+            if ((slopes[j] - slope < epsilon)) {
+              candidates.add(curve2.get(j));
+            }
+          }
+          else if ((slopes[j-1] < slope) && (slopes[j] > slope)) {
+            if ((slopes[j] - slope < epsilon)) {
+              candidates.add(curve2.get(j));
+            }
+          }
+        }
+      }
+      // System.out.println("Candidates size: " + candidates.size());
+      // for (Point c : candidates) {
+      //   System.out.println(c.x + ", " + c.y);
+      // }
+      // find best point
+      Point2D.Double center1 = UtilityFunctions.center(points1);
+      Point2D.Double center2 = UtilityFunctions.center(points2);
+      double max = 0.0f;
+      Point n = null;
+      for (Point cand : candidates) {
+        Point displacementVector = UtilityFunctions.subtract(center2, UtilityFunctions.convert(cand));
+        Point simulatedCtrlPointLocation = UtilityFunctions.add(points1.get(i), displacementVector);
+        double distance = UtilityFunctions.distance(center1, simulatedCtrlPointLocation);
+        Point realCtrlPointLocation = UtilityFunctions.add(points1.get(i), cand);
+        if (distance > max) {
+          max = distance;
+          n = realCtrlPointLocation;
+        }
+      }
+
+      // System.out.println("We added: " + n);
+      convolution.add(n);
+    }
+    // remove any null entries - couldn't find parallel places
+    Iterator it = convolution.iterator();
+    while(it.hasNext()) {
+      if (it.next() == null) {
+        it.remove();
+      }
+    }
+    return convolution;
+
+  }
 
   public static void main(String[] args) {
     Demo demo = new Demo();
