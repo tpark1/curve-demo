@@ -28,6 +28,8 @@ public class Display extends JPanel {
   Color c2 = Color.blue;
   Color c3 = Color.green;
 
+  int r = 5;
+
   public Display() {
     super();
     // timer = new Timer(40, new ActionListener() {
@@ -85,7 +87,7 @@ public class Display extends JPanel {
   }
 
   private ArrayList<Point> chooseCurve(int curveNum) {
-    if (curveNum == 1) {
+    if ((curveNum == 1) || (curveNum == 4)) {
       return curve1;
     }
     else if (curveNum == 2) {
@@ -108,6 +110,9 @@ public class Display extends JPanel {
     }
     else if (curveNum == 3) {
       return c3;
+    }
+    else if (curveNum == 4) {
+      return c2;
     }
     else {
       return null;
@@ -171,7 +176,7 @@ public class Display extends JPanel {
     }
     else if (curveNum == 4) {
       // provide an option to skip computation
-      curveNum = 1;
+      // curveNum = 1;
     }
     else if (curveNum == 5) {
       // provide an option to skip computation
@@ -204,15 +209,6 @@ public class Display extends JPanel {
     return curve;
   }
 
-  // private void redrawCurve(ArrayList<Point> curve)  {
-  // g.clearRect(0, 0, (int)frame.getSize().getWidth(), (int)frame.getSize().getHeight());
-  // for (Point p : curve) {
-  //   g.drawOval(p.x, p.y, pointRadius, pointRadius);
-  // }
-  // frame.getContentPane().validate();
-  // frame.getContentPane().repaint();
-  // }
-
   // Function that computes the location of point at time t
   // We use points.size()-1 for binomialCoefficient because there is one more point than segment
   private Point computeBezier(float t, ArrayList<Point> points, ArrayList<Point> curve) {
@@ -231,31 +227,136 @@ public class Display extends JPanel {
     return new Point((int)x, (int)y);
   }
 
-  public void shortenCalled(int curveNum) {
+  private ArrayList<Point> randomAttempt(ArrayList<Point> curve) throws IOException {
     ArrayList<Point> newCurve = new ArrayList<>();
-    Point a = new Point(0, 5);
-    ArrayList<Point> curve = chooseCurve(1);
+
+    double slopes[] = new double[curve.size()];
+
+    BufferedWriter writer = new BufferedWriter(new FileWriter("D:\\New folder\\swarthmore\\senior\\geometry\\curve-demo\\temp.txt"));
+    String fileContent = "";
+
+    // scale curvatures
+    double curvatures[] = new double[curve.size()];
     for (int i = 0; i<curve.size(); i++) {
-      newCurve.add(UtilityFunctions.add(a, curve.get(i)));
+      curvatures[i] = UtilityFunctions.curvature(curve, i);
+      slopes[i] = UtilityFunctions.test(curve, i);
     }
-    setCurve(newCurve, 1);
-    // g.clearRect(0, 0, (int)getSize().getWidth(), (int)getSize().getHeight());
-    // drawCurve(4);
-    repaint();
-    // timer.start();
-    // return output;
+
+    curvatures = UtilityFunctions.rescale(curvatures, 10.0);
+
+
+    for (int i = 0; i<curve.size(); i++) {
+      double TaSlope = slopes[i];
+      double TbSlope;
+      if (i > curve.size()-1-r) {
+        TbSlope = slopes[i-r];
+      }
+      else {
+        TbSlope = slopes[i+r];
+      }
+
+      Point2D.Double Ta = UtilityFunctions.getVector(TaSlope, 10);
+      Point2D.Double Tb = UtilityFunctions.getVector(TbSlope, 10);
+
+      Point2D.Double normal = UtilityFunctions.subtract(Ta, Tb);
+      Point2D.Double unitNormal = UtilityFunctions.normalize(normal, UtilityFunctions.magnitude(normal));
+
+      // double normalVectorSlope = UtilityFunctions.perpendicular(slopes[i]);
+      // Point2D.Double normal = new Point2D.Double(1.0, normalVectorSlope);
+      // Point2D.Double unitNormal = UtilityFunctions.normalize(normal, UtilityFunctions.magnitude(normal));
+      // double scalar = curvatures[i];
+      double scalar = 20;
+      Point scaledNormal = new Point((int)(unitNormal.x * scalar), (int)(unitNormal.y * scalar));
+
+      fileContent += "\n";
+      fileContent += Math.round(slopes[i] * 100)/100.0;
+      fileContent += " , ";
+      fileContent += Ta;
+      fileContent += " , ";
+      fileContent += Tb;
+      fileContent += " , ";
+      fileContent += normal;
+      fileContent += " , ";
+      fileContent += scaledNormal;
+
+
+      newCurve.add(UtilityFunctions.add(curve.get(i), scaledNormal));
+    }
+    writer.write(fileContent);
+    writer.close();
+
+    // double curvature = UtilityFunctions.curvature(curve, i);
+    return newCurve;
   }
 
-  // CHECK INTERACCTIVE DEMO TO SEE HOW HE DID CURVE SHORTENING
+  public void shortenCalled(int curveNum) throws IOException {
+    ArrayList<Point> newCurve = new ArrayList<>();
+    // Point a = new Point(0, 5);
+    // ArrayList<Point> curve = chooseCurve(1);
+    // for (int i = 0; i<curve.size(); i++) {
+    //   newCurve.add(UtilityFunctions.add(a, curve.get(i)));
+    // }
+    // setCurve(newCurve, 1);
+    // g.clearRect(0, 0, (int)getSize().getWidth(), (int)getSize().getHeight());
+    // drawCurve(4);
+    // repaint();
+    // timer.start();
+    // return output;
+
+    // BufferedWriter writer = new BufferedWriter(new FileWriter("D:\\New folder\\swarthmore\\senior\\geometry\\curve-demo\\temp.txt"));
+    // String fileContent = "";
+    // writer.write(fileContent);
+    //
+    // ArrayList<Point> curve = chooseCurve(curveNum);
+    // for (int i = 0; i<curve.size(); i++) {
+    //   Point laplacian;
+    //   double dr2;
+    //   if (i < (r + 1)) {
+    //     laplacian = UtilityFunctions.add(UtilityFunctions.scale(curve.get(r), 2), UtilityFunctions.add(curve.get(i+r), curve.get(curve.size()-1-i)));
+    //     dr2 = UtilityFunctions.magnitude2(UtilityFunctions.subtract2(curve.get(i+r),curve.get(curve.size()-1-i))) * 0.25;
+    //   }
+    //   else if (i > curve.size()-1-r) {
+    //     laplacian = UtilityFunctions.add(UtilityFunctions.scale(curve.get(r), 2), UtilityFunctions.add(curve.get(i+r-curve.size()), curve.get(i-r)));
+    //     dr2 = UtilityFunctions.magnitude2(UtilityFunctions.subtract2(curve.get(i+r-curve.size()),curve.get(i-r))) * 0.25;
+    //   }
+    //   else {
+    //     laplacian = UtilityFunctions.add(UtilityFunctions.scale(curve.get(r), 2), UtilityFunctions.add(curve.get(i+r), curve.get(i-r)));
+    //     dr2 = UtilityFunctions.magnitude2(UtilityFunctions.subtract2(curve.get(i+r),curve.get(i-r))) * 0.25;
+    //   }
+    //   // Point laplacian = UtilityFunctions.add(UtilityFunctions.scale(curve.get(r), 2), UtilityFunctions.add(curve.get(i+r), curve.get(i-r)));
+    //   // double dr2 = UtilityFunctions.magnitude2(UtilityFunctions.subtract2(curve.get(i+r),curve.get(i-r))) * 0.25;
+    //   double curvature = UtilityFunctions.curvature(curve, i);
+    //   Point scaledL = UtilityFunctions.scale(laplacian, 1.0/(dr2 * curvature));
+    //   writer.write("\n");
+    //   writer.write("laplacian: " + laplacian + " , dr2: " + dr2 + " , curvature: " + curvature + ", scaledL: " + scaledL);
+    //   Point x = UtilityFunctions.add(curve.get(i), scaledL);
+    //   newCurve.add(x);
+    // }
+    //
+    //
+    // for (int j = 0; j<curve.size(); j++) {
+    //   fileContent += "\n";
+    //   fileContent += (Double.toString(curve.get(j).x) + ", " + Double.toString(curve.get(j).y));
+    //   fileContent += " --> ";
+    //   fileContent += (Double.toString(newCurve.get(j).x) + ", " + Double.toString(newCurve.get(j).y));
+    // }
+    // writer.append(fileContent);
+    // writer.close();
+
+    newCurve = randomAttempt(chooseCurve(curveNum));
+    curve1 = newCurve;
+    drawCurve(4);
+  }
+
   // Think I should just calculate derivatives without thinking about t
   private ArrayList<Point> trackFront(ArrayList<Point> curve) {
 
     ArrayList<Point> output = new ArrayList<>();
-    Point a = new Point(0, 5);
-    for (int i = 0; i<curve.size(); i++) {
-      output.add(UtilityFunctions.add(a, curve.get(i)));
-    }
-    return output;
+    // Point a = new Point(0, 5);
+    // for (int i = 0; i<curve.size(); i++) {
+    //   output.add(UtilityFunctions.add(a, curve.get(i)));
+    // }
+    // return output;
 
     // System.out.println(curve.get(0));
     // System.out.println(curve.get(1));
@@ -313,12 +414,12 @@ public class Display extends JPanel {
     // double curvature[] = new double[curve.size()];
     // for (int i = 0; i<curve.size(); i++) {
     //   curvature[i] = UtilityFunctions.crossProductMagnitude(firstD[i], secondD[i]) / Math.pow(UtilityFunctions.magnitude(firstD[i]), 3);
-    //   // if (curvature[i] < 0) {
-    //   //   curvature[i] = Math.floor(factor * curvature[i]);
-    //   // }
-    //   // else {
-    //   //   curvature[i] = factor * Math.ceil(curvature[i]);
-    //   // }
+    //   if (curvature[i] < 0) {
+    //     curvature[i] = Math.floor(factor * curvature[i]);
+    //   }
+    //   else {
+    //     curvature[i] = factor * Math.ceil(curvature[i]);
+    //   }
     // }
     //
     //
@@ -345,12 +446,11 @@ public class Display extends JPanel {
     //
     //
     // // redrawCurve(newPoints);
-    // return newPoints;
+    return output;
   }
 
   public void convoluteCurves() {
     // public void convoluteCurves() throws IOException {
-    // g.setColor(Color.green);
 
     // System.out.println("Control Points 1");
     // for (Point p : points1) {
@@ -437,7 +537,7 @@ public class Display extends JPanel {
       double max = 0.0f;
       Point n = null;
       for (Point cand : candidates) {
-        Point displacementVector = UtilityFunctions.subtract(center2, UtilityFunctions.convert(cand));
+        Point displacementVector = UtilityFunctions.toPoint(UtilityFunctions.subtract(center2, UtilityFunctions.convert(cand)));
         Point simulatedCtrlPointLocation = UtilityFunctions.add(points1.get(i), displacementVector);
         double distance = UtilityFunctions.distance(center1, simulatedCtrlPointLocation);
         Point realCtrlPointLocation = UtilityFunctions.add(points1.get(i), cand);

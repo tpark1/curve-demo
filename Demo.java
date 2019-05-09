@@ -24,16 +24,13 @@ public class Demo {
     frame.setLocationRelativeTo(null);
     timer = new Timer(40, new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        // ArrayList<Point> newCurve = new ArrayList<>();
-        // Point a = new Point(0, 5);
-        // ArrayList<Point> curve = chooseCurve(1);
-        // for (int i = 0; i<curve.size(); i++) {
-        //   newCurve.add(UtilityFunctions.add(a, curve.get(i)));
-        // }
-        // setCurve(newCurve, 1);
-        // g.clearRect(0, 0, (int)getSize().getWidth(), (int)getSize().getHeight());
-        // drawCurve(4);
-        display.shortenCalled(curveNum);
+        try {
+          display.shortenCalled(curveNum);
+
+        }
+        catch (Exception ex) {
+          System.out.println(ex.getMessage());
+        }
       }
     });
 
@@ -98,7 +95,15 @@ public class Demo {
     shortenButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
         textArea.setText("Shortening");
-        timer.start();
+
+        try {
+          display.shortenCalled(curveNum);
+        }
+        catch (Exception ex) {
+          System.out.println(ex.getMessage());
+        }
+
+        // timer.start();
       }
     });
     JButton convoluteButton = new JButton("Convolute");
@@ -134,7 +139,7 @@ public class Demo {
     contentPane.add(textArea, BorderLayout.SOUTH);
     frame.setVisible(true);
 
-    // add event listeners
+    // set focus and add event listeners
     display.setFocusable(true);
     curve1CheckBox.setFocusable(false);
     curve2CheckBox.setFocusable(false);
@@ -171,6 +176,7 @@ public class Demo {
       }
       else if(e.getKeyChar() == 'c') {
         display.clearFrame();
+        textArea.setText("Points and curves cleared");
       }
     }
   }
