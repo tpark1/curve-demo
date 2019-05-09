@@ -15,12 +15,27 @@ public class Demo {
   JTextArea textArea;
   int curveNum = -1;
   Display display;
+  Timer timer;
 
   public Demo() {
     frame = new JFrame("Demo");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
     frame.setLocationRelativeTo(null);
+    timer = new Timer(40, new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        // ArrayList<Point> newCurve = new ArrayList<>();
+        // Point a = new Point(0, 5);
+        // ArrayList<Point> curve = chooseCurve(1);
+        // for (int i = 0; i<curve.size(); i++) {
+        //   newCurve.add(UtilityFunctions.add(a, curve.get(i)));
+        // }
+        // setCurve(newCurve, 1);
+        // g.clearRect(0, 0, (int)getSize().getWidth(), (int)getSize().getHeight());
+        // drawCurve(4);
+        display.shortenCalled(curveNum);
+      }
+    });
 
     addComponentsToPaneAndDisplay(frame.getContentPane());
   }
@@ -83,7 +98,7 @@ public class Demo {
     shortenButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
         textArea.setText("Shortening");
-        display.shortenCalled();
+        timer.start();
       }
     });
     JButton convoluteButton = new JButton("Convolute");

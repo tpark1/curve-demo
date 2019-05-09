@@ -1,6 +1,10 @@
 # curve-demo
 
 ## todo
-* Error message when shortening or convoluting before curves are drawn
+* Curve shortening flow!
 * Epsilon tuning
-* Refresh rate
+* Animations still not smooth :(
+
+## notes
+* convolution sometimes fails on vertical slope comparisons - ie the control point will
+evaluate to +/-14 or something but the curve only gets up to +/-5

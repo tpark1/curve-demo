@@ -30,24 +30,43 @@ public class Display extends JPanel {
 
   public Display() {
     super();
-    timer = new Timer(1, new ActionListener() {
-      public void actionPerformed(ActionEvent e) {
-        // if (curveNum == 1) {
-        //   curve1 = trackFront(curve1);
-        //   // display.repaint();
-        // }
-        // else if (curveNum == 2) {
-        //   curve2 = trackFront(curve2);
-        // }
-        // else {
-        //   textArea.setText("Select a curve first!");
-        // }
-      }
-    });
+    // timer = new Timer(40, new ActionListener() {
+    //   public void actionPerformed(ActionEvent e) {
+    //     ArrayList<Point> newCurve = new ArrayList<>();
+    //     Point a = new Point(0, 5);
+    //     ArrayList<Point> curve = chooseCurve(1);
+    //     for (int i = 0; i<curve.size(); i++) {
+    //       newCurve.add(UtilityFunctions.add(a, curve.get(i)));
+    //     }
+    //     setCurve(newCurve, 1);
+    //     g.clearRect(0, 0, (int)getSize().getWidth(), (int)getSize().getHeight());
+    //     drawCurve(4);
+    //   }
+    // });
+  }
+
+  public void paintComponent(Graphics g) {
+    super.paintComponent(g);
+    drawCurve(4);
   }
 
   public void setGraphics(Graphics g) {
     this.g = g;
+  }
+
+  private void setCurve(ArrayList<Point> newCurve, int curveNum) {
+    if (curveNum == 1) {
+      curve1 = newCurve;
+    }
+    else if (curveNum == 2) {
+      curve2 = newCurve;
+    }
+    else if (curveNum == 3) {
+      curve3 = newCurve;
+    }
+    else {
+      // do nothing
+    }
   }
 
   private ArrayList<Point> choosePoints(int curveNum) {
@@ -150,8 +169,13 @@ public class Display extends JPanel {
     else if (curveNum == 2) {
       curve2 = computeCurve(curveNum);
     }
-    else if (curveNum == 3) {
-      // do nothing
+    else if (curveNum == 4) {
+      // provide an option to skip computation
+      curveNum = 1;
+    }
+    else if (curveNum == 5) {
+      // provide an option to skip computation
+      curveNum = 2;
     }
     else {
       return false;
@@ -181,12 +205,12 @@ public class Display extends JPanel {
   }
 
   // private void redrawCurve(ArrayList<Point> curve)  {
-    // g.clearRect(0, 0, (int)frame.getSize().getWidth(), (int)frame.getSize().getHeight());
-    // for (Point p : curve) {
-    //   g.drawOval(p.x, p.y, pointRadius, pointRadius);
-    // }
-    // frame.getContentPane().validate();
-    // frame.getContentPane().repaint();
+  // g.clearRect(0, 0, (int)frame.getSize().getWidth(), (int)frame.getSize().getHeight());
+  // for (Point p : curve) {
+  //   g.drawOval(p.x, p.y, pointRadius, pointRadius);
+  // }
+  // frame.getContentPane().validate();
+  // frame.getContentPane().repaint();
   // }
 
   // Function that computes the location of point at time t
@@ -207,8 +231,19 @@ public class Display extends JPanel {
     return new Point((int)x, (int)y);
   }
 
-  public void shortenCalled() {
-    System.out.println("TODO: test animation smoothness");
+  public void shortenCalled(int curveNum) {
+    ArrayList<Point> newCurve = new ArrayList<>();
+    Point a = new Point(0, 5);
+    ArrayList<Point> curve = chooseCurve(1);
+    for (int i = 0; i<curve.size(); i++) {
+      newCurve.add(UtilityFunctions.add(a, curve.get(i)));
+    }
+    setCurve(newCurve, 1);
+    // g.clearRect(0, 0, (int)getSize().getWidth(), (int)getSize().getHeight());
+    // drawCurve(4);
+    repaint();
+    // timer.start();
+    // return output;
   }
 
   // CHECK INTERACCTIVE DEMO TO SEE HOW HE DID CURVE SHORTENING
