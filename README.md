@@ -4,6 +4,8 @@
 * Animations still not smooth :(
 * Change rogue point criteria
 * I think points near the first ctrl point are always wrong (cfs) b/c slopes are weirder
+* Editting UI function
+* Put options to do both versions of curve shortening
 
 
 ## notes
@@ -12,5 +14,6 @@ evaluate to +/-14 or something but the curve only gets up to +/-5
 * For shortening to work, curve MUST be drawn in counterclockwise order
 
 
-shortening naivelly works
-work on shortening the right way
+## To run
+ javac -cp ./commons-math3-3.6.1/commons-math3-3.6.1.jar:. *.java
+ java -cp ./commons-math3-3.6.1/commons-math3-3.6.1.jar:. Demo

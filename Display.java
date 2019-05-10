@@ -24,28 +24,15 @@ public class Display extends JPanel {
   int pointRadius = 1;
   int controlPointRadius = 10;
   double epsilon = 3.0f;
+  int r = 5;
 
   Color c1 = Color.red;
   Color c2 = Color.blue;
   Color c3 = Color.green;
 
-  int r = 5;
 
   public Display() {
     super();
-    // timer = new Timer(40, new ActionListener() {
-    //   public void actionPerformed(ActionEvent e) {
-    //     ArrayList<Point> newCurve = new ArrayList<>();
-    //     Point a = new Point(0, 5);
-    //     ArrayList<Point> curve = chooseCurve(1);
-    //     for (int i = 0; i<curve.size(); i++) {
-    //       newCurve.add(UtilityFunctions.add(a, curve.get(i)));
-    //     }
-    //     setCurve(newCurve, 1);
-    //     g.clearRect(0, 0, (int)getSize().getWidth(), (int)getSize().getHeight());
-    //     drawCurve(4);
-    //   }
-    // });
   }
 
   public void paintComponent(Graphics g) {
@@ -113,7 +100,7 @@ public class Display extends JPanel {
       return c3;
     }
     else if (curveNum == 4) {
-      return c2;
+      return c1;
     }
     else {
       return null;
@@ -147,7 +134,7 @@ public class Display extends JPanel {
     g.clearRect(0, 0, (int)this.getSize().getWidth(), (int)this.getSize().getHeight());
   }
 
-  private void drawPoints(int curveNum) {
+  public void drawPoints(int curveNum) {
     Graphics2D g2d = (Graphics2D) g;
     g.setColor(chooseColor(curveNum));
     for (Point p : choosePoints(curveNum)) {
@@ -228,8 +215,7 @@ public class Display extends JPanel {
     return new Point((int)x, (int)y);
   }
 
-  // always points inwards
-  private ArrayList<Point> naive(ArrayList<Point> curve) throws IOException {
+  private ArrayList<Point> curveShortening(ArrayList<Point> curve) throws IOException {
     ArrayList<Point> newCurve = new ArrayList<>();
 
     double slopes[] = new double[curve.size()];
@@ -246,92 +232,10 @@ public class Display extends JPanel {
       bools[i] = (UtilityFunctions.computeTangentVector(curve, i)).getValue();
     }
 
-    curvatures = UtilityFunctions.rescale(curvatures, 10.0);
-
-
-    for (int i = 0; i<curve.size(); i++) {
-      Point2D.Double tangent = UtilityFunctions.getVector(slopes[i], 10);
-
-      Point2D.Double perp;
-      if (bools[i]) {
-         perp = new Point2D.Double(-1.0 * tangent.y, tangent.x);
-      }
-      else {
-        perp = new Point2D.Double(tangent.y, -1.0 * tangent.x);
-      }
-
-
-      double scalar = 0.5;
-      Point scaledNormal = new Point((int)(perp.x * scalar), (int)(perp.y * scalar));
-
-      fileContent += "\n";
-      fileContent += Math.round(slopes[i] * 100)/100.0;
-      fileContent += " , ";
-      fileContent += tangent;
-      fileContent += " , ";
-      fileContent += perp;
-      fileContent += " , ";
-      fileContent += scaledNormal;
-
-      newCurve.add(UtilityFunctions.add(curve.get(i), scaledNormal));
+    curvatures = UtilityFunctions.rescale(curvatures, 2.0);
+    for (int i = 0; i<curvatures.length; i++) {
+      curvatures[i] += 3;
     }
-    writer.write(fileContent);
-    writer.close();
-
-    // double curvature = UtilityFunctions.curvature(curve, i);
-
-    // check for redundant points
-    Iterator it = newCurve.iterator();
-    Point previous = null;
-    while (it.hasNext()) {
-      if (it.next() == previous) {
-        previous = (Point)it.next();
-        it.remove();
-        break;
-      }
-    }
-    // check for rogue points
-    ArrayList<Point> finalCurve = new ArrayList<>();
-    for (int i = 0; i<newCurve.size(); i++) {
-      double distance1;
-      double distance2;
-      if (i == 0) {
-        distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(newCurve.size()-2));
-        distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i+1));
-      }
-      else if (i == (newCurve.size()-1)) {
-        distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i-1));
-        distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(1));
-      }
-      else {
-        distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i-1));
-        distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i+1));
-      }
-      if (!((Math.abs(distance1) > 10) || (Math.abs(distance2) > 10))) {
-        finalCurve.add(newCurve.get(i));
-      }
-    }
-    return finalCurve;
-  }
-
-  private ArrayList<Point> randomAttempt(ArrayList<Point> curve) throws IOException {
-    ArrayList<Point> newCurve = new ArrayList<>();
-
-    double slopes[] = new double[curve.size()];
-    boolean bools[] = new boolean[curve.size()];
-
-    BufferedWriter writer = new BufferedWriter(new FileWriter("D:\\New folder\\swarthmore\\senior\\geometry\\curve-demo\\temp.txt"));
-    String fileContent = "";
-
-    // scale curvatures
-    double curvatures[] = new double[curve.size()];
-    for (int i = 0; i<curve.size(); i++) {
-      curvatures[i] = UtilityFunctions.curvature(curve, i);
-      slopes[i] = (UtilityFunctions.computeTangentVector(curve, i)).getKey();
-      bools[i] = (UtilityFunctions.computeTangentVector(curve, i)).getValue();
-    }
-
-    curvatures = UtilityFunctions.rescale(curvatures, 10.0);
 
 
     for (int i = 0; i<curve.size(); i++) {
@@ -352,14 +256,17 @@ public class Display extends JPanel {
       }
 
       Point2D.Double normal = UtilityFunctions.subtract(Ta, Tb);
+      if (TaSlope == TbSlope) {
+        double normalVectorSlope = UtilityFunctions.perpendicular(slopes[i]);
+        normal = new Point2D.Double(1.0, normalVectorSlope);
+      }
       Point2D.Double unitNormal = UtilityFunctions.scale2(normal, UtilityFunctions.magnitude(normal));
 
-      // double normalVectorSlope = UtilityFunctions.perpendicular(slopes[i]);
-      // Point2D.Double normal = new Point2D.Double(1.0, normalVectorSlope);
-      // Point2D.Double unitNormal = UtilityFunctions.scale2(normal, UtilityFunctions.magnitude(normal));
-      // double scalar = curvatures[i];
-      double scalar = 20;
-      Point scaledNormal = new Point((int)(unitNormal.x * scalar), (int)(unitNormal.y * scalar));
+
+      double scalar = curvatures[i];
+      // double scalar = 20;
+      Point2D.Double scaledNormal = new Point2D.Double((unitNormal.x * scalar), unitNormal.y * scalar);
+      Point scaledNormal2 = new Point((int)Math.round(unitNormal.x * scalar), (int)Math.round(unitNormal.y * scalar));
 
       fileContent += "\n";
       fileContent += Math.round(slopes[i] * 100)/100.0;
@@ -371,191 +278,76 @@ public class Display extends JPanel {
       fileContent += normal;
       fileContent += " , ";
       fileContent += scaledNormal;
+      // fileContent += "\n";
+      // fileContent += curvatures[i];
 
 
-      newCurve.add(UtilityFunctions.add(curve.get(i), scaledNormal));
+
+      newCurve.add(UtilityFunctions.add(curve.get(i), scaledNormal2));
     }
     writer.write(fileContent);
     writer.close();
 
-    // double curvature = UtilityFunctions.curvature(curve, i);
+    // remove redundant points
+    return newCurve;
+    // Iterator it = newCurve.iterator();
+    // Point previous = null;
+    // while (it.hasNext()) {
+    //   if (it.next() == previous) {
+    //     previous = (Point)it.next();
+    //     it.remove();
+    //     break;
+    //   }
+    // }
+    // return newCurve;
+    // // check for rogue points
+    // ArrayList<Point> finalCurve = new ArrayList<>();
+    // for (int i = 0; i<newCurve.size(); i++) {
+    //   double distance1;
+    //   double distance2;
+    //   if (i == 0) {
+    //     distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(newCurve.size()-2));
+    //     distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i+1));
+    //   }
+    //   else if (i == (newCurve.size()-1)) {
+    //     distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i-1));
+    //     distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(1));
+    //   }
+    //   else {
+    //     distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i-1));
+    //     distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i+1));
+    //   }
+    //   if (!((Math.abs(distance1) > 10) && (Math.abs(distance2) > 10))) {
+    //     finalCurve.add(newCurve.get(i));
+    //   }
+    // }
+
+
+    // return finalCurve;
+  }
+
+  private ArrayList<Point> resampling(ArrayList<Point> curve) throws IOException {
+    BufferedWriter writer = new BufferedWriter(new FileWriter("D:\\New folder\\swarthmore\\senior\\geometry\\curve-demo\\temp.txt"));
+    String fileContent = "";
+    ArrayList<Point> newCurve = new ArrayList<>();
+    for (int i = 0; i<curve.size(); i++) {
+      Point newPoint = UtilityFunctions.resample(curve, i);
+      newCurve.add(newPoint);
+      fileContent += ("\n" + curve.get(i) + " , " + newPoint);
+    }
+    writer.write(fileContent);
+    writer.close();
     return newCurve;
   }
 
   public void shortenCalled(int curveNum) throws IOException {
-    ArrayList<Point> newCurve = new ArrayList<>();
-    // Point a = new Point(0, 5);
-    // ArrayList<Point> curve = chooseCurve(1);
-    // for (int i = 0; i<curve.size(); i++) {
-    //   newCurve.add(UtilityFunctions.add(a, curve.get(i)));
-    // }
-    // setCurve(newCurve, 1);
-    // g.clearRect(0, 0, (int)getSize().getWidth(), (int)getSize().getHeight());
-    // drawCurve(4);
-    // repaint();
-    // timer.start();
-    // return output;
-
-    // BufferedWriter writer = new BufferedWriter(new FileWriter("D:\\New folder\\swarthmore\\senior\\geometry\\curve-demo\\temp.txt"));
-    // String fileContent = "";
-    // writer.write(fileContent);
-    //
-    // ArrayList<Point> curve = chooseCurve(curveNum);
-    // for (int i = 0; i<curve.size(); i++) {
-    //   Point laplacian;
-    //   double dr2;
-    //   if (i < (r + 1)) {
-    //     laplacian = UtilityFunctions.add(UtilityFunctions.scale(curve.get(r), 2), UtilityFunctions.add(curve.get(i+r), curve.get(curve.size()-1-i)));
-    //     dr2 = UtilityFunctions.magnitude2(UtilityFunctions.subtract2(curve.get(i+r),curve.get(curve.size()-1-i))) * 0.25;
-    //   }
-    //   else if (i > curve.size()-1-r) {
-    //     laplacian = UtilityFunctions.add(UtilityFunctions.scale(curve.get(r), 2), UtilityFunctions.add(curve.get(i+r-curve.size()), curve.get(i-r)));
-    //     dr2 = UtilityFunctions.magnitude2(UtilityFunctions.subtract2(curve.get(i+r-curve.size()),curve.get(i-r))) * 0.25;
-    //   }
-    //   else {
-    //     laplacian = UtilityFunctions.add(UtilityFunctions.scale(curve.get(r), 2), UtilityFunctions.add(curve.get(i+r), curve.get(i-r)));
-    //     dr2 = UtilityFunctions.magnitude2(UtilityFunctions.subtract2(curve.get(i+r),curve.get(i-r))) * 0.25;
-    //   }
-    //   // Point laplacian = UtilityFunctions.add(UtilityFunctions.scale(curve.get(r), 2), UtilityFunctions.add(curve.get(i+r), curve.get(i-r)));
-    //   // double dr2 = UtilityFunctions.magnitude2(UtilityFunctions.subtract2(curve.get(i+r),curve.get(i-r))) * 0.25;
-    //   double curvature = UtilityFunctions.curvature(curve, i);
-    //   Point scaledL = UtilityFunctions.scale(laplacian, 1.0/(dr2 * curvature));
-    //   writer.write("\n");
-    //   writer.write("laplacian: " + laplacian + " , dr2: " + dr2 + " , curvature: " + curvature + ", scaledL: " + scaledL);
-    //   Point x = UtilityFunctions.add(curve.get(i), scaledL);
-    //   newCurve.add(x);
-    // }
-    //
-    //
-    // for (int j = 0; j<curve.size(); j++) {
-    //   fileContent += "\n";
-    //   fileContent += (Double.toString(curve.get(j).x) + ", " + Double.toString(curve.get(j).y));
-    //   fileContent += " --> ";
-    //   fileContent += (Double.toString(newCurve.get(j).x) + ", " + Double.toString(newCurve.get(j).y));
-    // }
-    // writer.append(fileContent);
-    // writer.close();
-
-    newCurve = randomAttempt(chooseCurve(curveNum));
+    // ArrayList<Point> newCurve = curveShortening(chooseCurve(curveNum));
+    ArrayList<Point> newCurve = resampling(chooseCurve(curveNum));
     curve1 = newCurve;
     drawCurve(4);
   }
 
-  // Think I should just calculate derivatives without thinking about t
-  private ArrayList<Point> trackFront(ArrayList<Point> curve) {
-
-    ArrayList<Point> output = new ArrayList<>();
-    // Point a = new Point(0, 5);
-    // for (int i = 0; i<curve.size(); i++) {
-    //   output.add(UtilityFunctions.add(a, curve.get(i)));
-    // }
-    // return output;
-
-    // System.out.println(curve.get(0));
-    // System.out.println(curve.get(1));
-    // System.out.println(curve.get(2));
-    // System.out.println(curve.get(3));
-    // System.out.println(curve.get(4));
-    // // approximate first derivative with Central Difference method
-    // // use Forward and Backward Differences for first and last points
-    // Point2D.Double firstD[] = new Point2D.Double[curve.size()];
-    // for (int i = 0; i<curve.size(); i++) {
-    //   if (i == 0) {
-    //     Point p1 = curve.get(i+1);
-    //     Point p2 = curve.get(i);
-    //     firstD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
-    //   }
-    //   else if(i == curve.size()-1) {
-    //     Point p1 = curve.get(i);
-    //     Point p2 = curve.get(i-1);
-    //     firstD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
-    //   }
-    //   else {
-    //     Point p1 = curve.get(i+1);
-    //     Point p2 = curve.get(i-1);
-    //     firstD[i] = new Point2D.Double((p2.x - p1.x)/(2*step), (p2.y - p1.y)/(2*step));
-    //   }
-    // }
-    // int factor = 10;
-    //
-    // firstD = UtilityFunctions.rescale(firstD, factor);
-    //
-    // // approximate all second derivatives with Central Difference, approximating the numerator
-    // // Again, use Forward and Backward Differences for first and last points
-    // Point2D.Double secondD[] = new Point2D.Double[curve.size()];
-    // for (int i = 0; i<curve.size(); i++) {
-    //   if (i == 0) {
-    //     Point2D.Double p1 = firstD[i+1];
-    //     Point2D.Double p2 = firstD[i];
-    //     secondD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
-    //   }
-    //   else if(i == curve.size()-1) {
-    //     Point2D.Double p1 = firstD[i];
-    //     Point2D.Double p2 = firstD[i-1];
-    //     secondD[i] = new Point2D.Double((p2.x - p1.x)/step, (p2.y - p1.y)/step);
-    //   }
-    //   else {
-    //     Point2D.Double p1 = firstD[i+1];
-    //     Point2D.Double p2 = firstD[i-1];
-    //     secondD[i] = new Point2D.Double((p2.x - p1.x)/(2*step), (p2.y - p1.y)/(2*step));
-    //   }
-    // }
-    //
-    // secondD = UtilityFunctions.rescale(secondD, factor);
-    //
-    //
-    // double curvature[] = new double[curve.size()];
-    // for (int i = 0; i<curve.size(); i++) {
-    //   curvature[i] = UtilityFunctions.crossProductMagnitude(firstD[i], secondD[i]) / Math.pow(UtilityFunctions.magnitude(firstD[i]), 3);
-    //   if (curvature[i] < 0) {
-    //     curvature[i] = Math.floor(factor * curvature[i]);
-    //   }
-    //   else {
-    //     curvature[i] = factor * Math.ceil(curvature[i]);
-    //   }
-    // }
-    //
-    //
-    //
-    // for (int i = 0;i<5 ; i++) {
-    //   System.out.println(firstD[i]);
-    //   System.out.println(secondD[i]);
-    //   System.out.println(curvature[i]);
-    //
-    // }
-    //
-    // // we note that the tangent vector values have been calculated with firstD and the
-    // // derivative of the tangent vectors have been calculated with secondD, so secondD = normalVectors
-    // ArrayList<Point> newPoints = new ArrayList<>();
-    // for (int i = 0; i<curve.size(); i++) {
-    //   // move point
-    //   Point p = curve.get(i);
-    //   newPoints.add(new Point((int)(p.x + secondD[i].x * curvature[i]), (int)(p.y + secondD[i].y * curvature[i])));
-    // }
-    //
-    // for (int i = 0; i<5; i++) {
-    //   System.out.println(newPoints.get(i));
-    // }
-    //
-    //
-    // // redrawCurve(newPoints);
-    return output;
-  }
-
   public void convoluteCurves() {
-    // public void convoluteCurves() throws IOException {
-
-    // System.out.println("Control Points 1");
-    // for (Point p : points1) {
-    //   System.out.println(p);
-    // }
-    //
-    // System.out.println("Control Points 2");
-    // for (Point p : points2) {
-    //   System.out.println(p);
-    // }
-
-
     ArrayList<Point> convolution = new ArrayList<>();
 
     // first compute slopes of curve2
@@ -563,19 +355,6 @@ public class Display extends JPanel {
     for (int i = 0; i<curve2.size(); i++) {
       slopes[i] = (UtilityFunctions.computeTangentVector(curve2, i)).getKey();
     }
-
-    // BufferedWriter writer = new BufferedWriter(new FileWriter("D:\\New folder\\swarthmore\\senior\\geometry\\curve-demo\\temp.txt"));
-
-    // String fileContent = "";
-    // for (int i = 0; i<slopes.length; i++) {
-    //   fileContent += "\n";
-    //   fileContent += (Double.toString(curve2.get(i).x) + ", " + Double.toString(curve2.get(i).y));
-    //   fileContent += "\n";
-    //   fileContent += Double.toString(slopes[i]);
-    // }
-    // writer.write(fileContent);
-    // writer.close();
-
 
     // now jump into convolution
     for (int i = 0; i<points1.size(); i++) {
@@ -590,7 +369,6 @@ public class Display extends JPanel {
       else {
         slope = UtilityFunctions.slope(points1.get(i-1), points1.get(i+1));
       }
-      // System.out.println("The slope of the " + i + "th point is: " + slope);
 
       // find points in curve2 that are parallel
       ArrayList<Point> candidates = new ArrayList<>();
@@ -620,11 +398,6 @@ public class Display extends JPanel {
           }
         }
       }
-      // System.out.println("Candidates size: " + candidates.size());
-      // for (Point c : candidates) {
-      //   System.out.println(c.x + ", " + c.y);
-      // }
-      // find best point
       Point2D.Double center1 = UtilityFunctions.center(points1);
       Point2D.Double center2 = UtilityFunctions.center(points2);
       double max = 0.0f;
@@ -639,8 +412,6 @@ public class Display extends JPanel {
           n = realCtrlPointLocation;
         }
       }
-
-      // System.out.println("We added: " + n);
       convolution.add(n);
     }
     // remove any null entries - couldn't find parallel places
@@ -655,6 +426,4 @@ public class Display extends JPanel {
     curve3 = computeCurve(3);
     drawCurve(3);
   }
-
-
 }

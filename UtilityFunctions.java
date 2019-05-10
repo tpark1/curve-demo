@@ -3,10 +3,14 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import javafx.util.Pair;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
+
 public class UtilityFunctions {
   static int r = 10;
-  static int t = 20;
+  static int t = 40;
   static double epsilon = 0.001f;
+  // static double mean = 0;
+  static double sd = 200;
   static final double MAX_VALUE = Double.MAX_VALUE;
 
   public UtilityFunctions() {
@@ -25,9 +29,9 @@ public class UtilityFunctions {
     return new Point(p1.x + p2.x, p1.y + p2.y);
   }
 
-  // public static Point2D.Double add2(Point p1, Point2D.Double p2) {
-  //   return new Point2D.Double(p1.x + p2.x, p1.y + p2.y);
-  // }
+  public static Point2D.Double add2(Point2D.Double p1, Point2D.Double p2) {
+    return new Point2D.Double(p1.x + p2.x, p1.y + p2.y);
+  }
 
   public static Point2D.Double subtract(Point2D.Double p1, Point2D.Double p2) {
     return new Point2D.Double(p1.x - p2.x, p1.y - p2.y);
@@ -128,6 +132,64 @@ public class UtilityFunctions {
     return -1.0/x;
   }
 
+  public static Point resample(ArrayList<Point> curve, int x) {
+    int min = x - (int)sd;
+    int max = x + (int)sd;
+    NormalDistribution dist = new NormalDistribution(x, sd);
+    // calculate coefficients
+    double coefficients[] = new double[(int)sd * 2 + 1];
+    double total = 0;
+    for (int i = min; i<max+1; i++) {
+      if (i < x) {
+        coefficients[i-min] = dist.probability(min, i);
+      }
+      else {
+        coefficients[i-min] = dist.probability(i, max);
+      }
+      total += coefficients[i-min];
+    }
+    // make sum of coefficents = 1
+    for (int i = 0; i<coefficients.length; i++) {
+      coefficients[i] = coefficients[i]/total;
+    }
+    // System.out.println("coefficients");
+    // for (int i = 0; i<coefficients.length; i++) {
+    //   System.out.println(coefficients[i]);
+    // }
+
+    Point2D.Double sum = new Point2D.Double(0,0);
+    for (int i = 0; i<coefficients.length; i++) {
+      if ( min+i < 0) {
+        sum = add2(sum, scale2(convert(curve.get(curve.size() + (min+i))), 1.0/coefficients[i]));
+      }
+      else if (min+i > curve.size()-1) {
+        sum = add2(sum, scale2(convert(curve.get((min + i) - curve.size())), 1.0/coefficients[i]));
+      }
+      else {
+        sum = add2(sum, scale2(convert(curve.get(min + i)), 1.0/coefficients[i]));
+      }
+    }
+    return toPoint(sum);
+
+
+
+    // System.out.println("coefficients");
+    // for (double d : coefficients) {
+    //   System.out.println(d);
+    // }
+
+
+    // if () {
+    //
+    // }
+    // else if () {
+    //
+    // }
+    // else {
+    //
+    // }
+  }
+
   public static double curvature(ArrayList<Point> curve, int x) {
     Point twiceDisplacement;
     Point laplacian;
@@ -146,6 +208,22 @@ public class UtilityFunctions {
     double dr2 = Math.pow(magnitude2(twiceDisplacement), 2) * 0.25;
     return Math.abs(0.5 * crossProductMagnitude(twiceDisplacement, laplacian)) * Math.pow(dr2, -1.5);
   }
+
+  // public static double[] curvature2(ArrayList<Point> curve) {
+  //   double output[] = new double[curve.size()];
+  //   ArrayList<Point> firstD = new ArrayList<>(curve.size());
+  //   for (int i = 0; i<curve.size(); i++) {
+  //     firstD.add(computeTangentVector(curve, i).getKey());
+  //   }
+  //   ArrayList<Point> secondD = new ArrayList<>(curve.size());
+  //   for (int i = 0; i<curve.size(); i++) {
+  //     secondD.add(computeTangentVector(firstD, i).getKey());
+  //   }
+  //   for (int i = 0; i<curve.size(); i++) {
+  //     output[i] = Math.abs(secondD.get(i)) / Math.abs(firstD.get(i));
+  //   }
+  //   return output;
+  // }
 
   public static Point2D.Double center(ArrayList<Point> points) {
     double x = 0;

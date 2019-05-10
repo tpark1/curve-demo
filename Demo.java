@@ -85,12 +85,13 @@ public class Demo {
     JButton drawButton = new JButton("Draw");
     drawButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        if(display.drawCurve(curveNum)) {
-          textArea.setText("Select a curve first!");
-        }
-        else {
-          textArea.setText("Curve drawn");
-        }
+        display.drawPoints(1);
+      //   if(display.drawCurve(curveNum)) {
+      //     textArea.setText("Select a curve first!");
+      //   }
+      //   else {
+      //     textArea.setText("Curve drawn");
+      //   }
       }
     });
     JButton shortenButton = new JButton("Shorten");
@@ -119,6 +120,8 @@ public class Demo {
       public void actionPerformed(ActionEvent e) {
         frame.getContentPane().validate();
         frame.getContentPane().repaint();
+        display.drawCurve(4);
+        // display.drawPoints(4)
       }
     });
     buttons.add(editButton);
