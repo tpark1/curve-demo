@@ -4,7 +4,6 @@
 * external file/saving current layout
 * Make videos on how to use
 * Write up
-* test animations for curve shortening 
 
 
 ## notes

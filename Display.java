@@ -137,34 +137,37 @@ public class Display extends JPanel {
     return null;
   }
 
-  public void movePoint(int x, int y, int curveNum, Point p) {
-    // erase old point
-    Graphics2D g2d = (Graphics2D) g;
-    g2d.setColor(this.getBackground());
-    // g2d.setColor(c2);
-    g2d.fillOval(x-offset, y-offset, 2*controlPointRadius, 2*controlPointRadius);
-
-    // draw new point - don't update lists
-    g2d.setColor(chooseColor(curveNum));
-    // g2d.fillOval(x, y, controlPointRadius, controlPointRadius);
-  }
-
   public void updatePoints(int x, int y, int curveNum, Point p) {
-    // visuals
+    // visual updates
     Graphics2D g2d = (Graphics2D) g;
     g2d.setColor(this.getBackground());
-    // g2d.setColor(c2);
     g2d.fillOval(x-offset, y-offset, 2*controlPointRadius, 2*controlPointRadius);
-
+    // modify lists
     if (curveNum == 1) {
-      points1.set(points1.indexOf(p), new Point(x,y));
+      int index = points1.indexOf(p);
+      if ((index == 0) || (index == (points1.size()-1))) {
+        points1.set(0, new Point(x,y));
+        points1.set(points1.size()-1, new Point(x,y));
+      }
+      else {
+        points1.set(points1.indexOf(p), new Point(x,y));
+      }
     }
     else if (curveNum == 2) {
-      points2.set(points2.indexOf(p), new Point(x,y));
+      int index = points2.indexOf(p);
+      if ((index == 0) || (index == (points2.size()-1))) {
+        points2.set(0, new Point(x,y));
+        points2.set(points2.size()-1, new Point(x,y));
+      }
+      else {
+        points2.set(points2.indexOf(p), new Point(x,y));
+      }
     }
     clearScreen();
-    drawPoints(curveNum);
-    drawCurve(curveNum);
+    drawPoints(1);
+    drawPoints(2);
+    drawCurve(1);
+    drawCurve(2);
   }
 
   public void clearFrame() {
@@ -190,6 +193,9 @@ public class Display extends JPanel {
   }
 
   private void closePoints(int curveNum) {
+    if ((choosePoints(curveNum) == null) || (choosePoints(curveNum).isEmpty())) {
+      return;
+    }
     if (curveNum == 1) {
       points1.add(points1.get(0));
     }
@@ -397,7 +403,7 @@ public class Display extends JPanel {
     return newCurve;
   }
 
-  public void shortenCalled(int curveNum, int method) throws IOException {
+  public boolean shortenCalled(int curveNum, int method) throws IOException {
     ArrayList<Point> newCurve;
     if (method == 1) {
       newCurve = resampling(chooseCurve(curveNum));
@@ -405,14 +411,19 @@ public class Display extends JPanel {
     else {
       newCurve = frontTracking(chooseCurve(curveNum));
     }
+    boolean output = false;
     if (curveNum == 1) {
+      output = newCurve.equals(curve1);
       curve1 = newCurve;
       drawCurve(4);
     }
     else if (curveNum == 2) {
+      output = newCurve.equals(curve2);
       curve2 = newCurve;
       drawCurve(5);
     }
+
+    return output;
   }
 
   public void convoluteCurves() {
