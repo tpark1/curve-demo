@@ -22,9 +22,11 @@ public class Display extends JPanel {
   Timer timer;
   float step = 0.001f;
   int pointRadius = 1;
-  int controlPointRadius = 10;
-  double epsilon = 3.0f;
+  int controlPointRadius = 12;
+  double slopeEpsilon = 3.0f;
+  double distanceEpsilon = 7.0f;
   int r = 5;
+  int offset = 8;
 
   Color c1 = Color.red;
   Color c2 = Color.blue;
@@ -124,6 +126,47 @@ public class Display extends JPanel {
     return true;
   }
 
+  public Point onPoint(int x, int y, int curveNum) {
+    ArrayList<Point> points = choosePoints(curveNum);
+    Point mouseLoc = new Point(x-offset, y-offset);
+    for (Point p : points) {
+      if (UtilityFunctions.distance(UtilityFunctions.convert(p), mouseLoc) < distanceEpsilon) {
+        return p;
+      }
+    }
+    return null;
+  }
+
+  public void movePoint(int x, int y, int curveNum, Point p) {
+    // erase old point
+    Graphics2D g2d = (Graphics2D) g;
+    g2d.setColor(this.getBackground());
+    // g2d.setColor(c2);
+    g2d.fillOval(x-offset, y-offset, 2*controlPointRadius, 2*controlPointRadius);
+
+    // draw new point - don't update lists
+    g2d.setColor(chooseColor(curveNum));
+    // g2d.fillOval(x, y, controlPointRadius, controlPointRadius);
+  }
+
+  public void updatePoints(int x, int y, int curveNum, Point p) {
+    // visuals
+    Graphics2D g2d = (Graphics2D) g;
+    g2d.setColor(this.getBackground());
+    // g2d.setColor(c2);
+    g2d.fillOval(x-offset, y-offset, 2*controlPointRadius, 2*controlPointRadius);
+
+    if (curveNum == 1) {
+      points1.set(points1.indexOf(p), new Point(x,y));
+    }
+    else if (curveNum == 2) {
+      points2.set(points2.indexOf(p), new Point(x,y));
+    }
+    clearScreen();
+    drawPoints(curveNum);
+    drawCurve(curveNum);
+  }
+
   public void clearFrame() {
     points1 = new ArrayList<>();
     points2 = new ArrayList<>();
@@ -131,6 +174,10 @@ public class Display extends JPanel {
     curve1 = new ArrayList<>();
     curve2 = new ArrayList<>();
     curve3 = new ArrayList<>();
+    g.clearRect(0, 0, (int)this.getSize().getWidth(), (int)this.getSize().getHeight());
+  }
+
+  public void clearScreen() {
     g.clearRect(0, 0, (int)this.getSize().getWidth(), (int)this.getSize().getHeight());
   }
 
@@ -164,7 +211,7 @@ public class Display extends JPanel {
     }
     else if (curveNum == 4) {
       // provide an option to skip computation
-      // curveNum = 1;
+      curveNum = 1;
     }
     else if (curveNum == 5) {
       // provide an option to skip computation
@@ -215,7 +262,7 @@ public class Display extends JPanel {
     return new Point((int)x, (int)y);
   }
 
-  private ArrayList<Point> curveShortening(ArrayList<Point> curve) throws IOException {
+  private ArrayList<Point> frontTracking(ArrayList<Point> curve) throws IOException {
     ArrayList<Point> newCurve = new ArrayList<>();
 
     double slopes[] = new double[curve.size()];
@@ -337,14 +384,35 @@ public class Display extends JPanel {
     }
     writer.write(fileContent);
     writer.close();
+
+    Iterator it = newCurve.iterator();
+    Point previous = null;
+    while (it.hasNext()) {
+      if (it.next() == previous) {
+        previous = (Point)it.next();
+        it.remove();
+        break;
+      }
+    }
     return newCurve;
   }
 
-  public void shortenCalled(int curveNum) throws IOException {
-    // ArrayList<Point> newCurve = curveShortening(chooseCurve(curveNum));
-    ArrayList<Point> newCurve = resampling(chooseCurve(curveNum));
-    curve1 = newCurve;
-    drawCurve(4);
+  public void shortenCalled(int curveNum, int method) throws IOException {
+    ArrayList<Point> newCurve;
+    if (method == 1) {
+      newCurve = resampling(chooseCurve(curveNum));
+    }
+    else {
+      newCurve = frontTracking(chooseCurve(curveNum));
+    }
+    if (curveNum == 1) {
+      curve1 = newCurve;
+      drawCurve(4);
+    }
+    else if (curveNum == 2) {
+      curve2 = newCurve;
+      drawCurve(5);
+    }
   }
 
   public void convoluteCurves() {
@@ -375,24 +443,24 @@ public class Display extends JPanel {
       for (int j = 0; j<curve2.size(); j++) {
         if (j == 0) {
           if ((slopes[slopes.length-1] > slope) && (slopes[j] < slope)) {
-            if ((slopes[j] - slope < epsilon)) {
+            if ((slopes[j] - slope < slopeEpsilon)) {
               candidates.add(curve2.get(j));
             }
           }
           else if ((slopes[slopes.length-1] < slope) && (slopes[j] > slope)) {
-            if ((slopes[j] - slope < epsilon)) {
+            if ((slopes[j] - slope < slopeEpsilon)) {
               candidates.add(curve2.get(j));
             }
           }
         }
         else {
           if ((slopes[j-1] > slope) && (slopes[j] < slope)) {
-            if ((slopes[j] - slope < epsilon)) {
+            if ((slopes[j] - slope < slopeEpsilon)) {
               candidates.add(curve2.get(j));
             }
           }
           else if ((slopes[j-1] < slope) && (slopes[j] > slope)) {
-            if ((slopes[j] - slope < epsilon)) {
+            if ((slopes[j] - slope < slopeEpsilon)) {
               candidates.add(curve2.get(j));
             }
           }

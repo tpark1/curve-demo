@@ -15,17 +15,35 @@ public class Demo {
   JTextArea textArea;
   int curveNum = -1;
   Display display;
-  Timer timer;
+  Timer timer1;
+  Timer timer2;
+  Color sidePanelBackground = Color.orange;
+  boolean editting = false;
+  boolean holdingPoint = false;
+  Point editPoint = null;
 
   public Demo() {
     frame = new JFrame("Demo");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
     frame.setLocationRelativeTo(null);
-    timer = new Timer(40, new ActionListener() {
+    timer1 = new Timer(40, new ActionListener() {
       public void actionPerformed(ActionEvent e) {
         try {
-          display.shortenCalled(curveNum);
+          display.shortenCalled(curveNum, 1);
+          // display.repaint();
+        }
+        catch (Exception ex) {
+          System.out.println("fail");
+          System.out.println(ex.getMessage());
+          ex.printStackTrace();
+        }
+      }
+    });
+    timer2 = new Timer(40, new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        try {
+          display.shortenCalled(curveNum, 2);
           // display.repaint();
         }
         catch (Exception ex) {
@@ -46,15 +64,16 @@ public class Demo {
     // buttonPanel on the right
     JPanel buttonPanel = new JPanel();
     buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.PAGE_AXIS));
+    buttonPanel.setBackground(sidePanelBackground);
     // check boxes
     JPanel checkBoxes = new JPanel();
+    checkBoxes.setBackground(sidePanelBackground);
     JCheckBox curve1CheckBox = new JCheckBox("curve 1");
     JCheckBox curve2CheckBox = new JCheckBox("curve 2");
     curve1CheckBox.addItemListener(new ItemListener() {
       public void itemStateChanged(ItemEvent e) {
         if (e.getStateChange() == ItemEvent.SELECTED) {
           textArea.setText("Curve 1 selected");
-          // g.setColor(Color.red);
           curveNum = 1;
         }
       }
@@ -63,7 +82,6 @@ public class Demo {
       public void itemStateChanged(ItemEvent e) {
         if (e.getStateChange() == ItemEvent.SELECTED) {
           textArea.setText("Curve 2 selected");
-          // g.setColor(Color.blue);
           curveNum = 2;
         }
       }
@@ -76,30 +94,54 @@ public class Demo {
     buttonPanel.add(checkBoxes);
     // buttons
     JPanel buttons = new JPanel();
-    JButton editButton = new JButton("Edit");
-    editButton.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent e) {
-        textArea.setText("Editting");
+    buttons.setLayout(new GridLayout(3,3, 10,10));
+    buttons.setBackground(sidePanelBackground);
+    JCheckBox editButton = new JCheckBox("Edit");
+    editButton.setBackground(sidePanelBackground);
+    editButton.addItemListener(new ItemListener() {
+      public void itemStateChanged(ItemEvent e) {
+        if (e.getStateChange() == ItemEvent.SELECTED) {
+          editting = true;
+          textArea.setText("Editting");
+        }
+        else {
+          editting = false;
+          textArea.setText("Plotting");
+        }
       }
     });
     JButton drawButton = new JButton("Draw");
     drawButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
         display.drawPoints(1);
-      //   if(display.drawCurve(curveNum)) {
-      //     textArea.setText("Select a curve first!");
-      //   }
-      //   else {
-      //     textArea.setText("Curve drawn");
-      //   }
+        //   if(display.drawCurve(curveNum)) {
+        //     textArea.setText("Select a curve first!");
+        //   }
+        //   else {
+        //     textArea.setText("Curve drawn");
+        //   }
       }
     });
-    JButton shortenButton = new JButton("Shorten");
-    shortenButton.addActionListener(new ActionListener() {
+    JButton shortenButton1 = new JButton("Shorten - Resample");
+    shortenButton1.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        textArea.setText("Shortening");
+        textArea.setText("Shortening with resampling");
         try {
-          display.shortenCalled(curveNum);
+          display.shortenCalled(curveNum, 1);
+        }
+        catch (Exception ex) {
+          System.out.println(ex.getMessage());
+        }
+
+        // timer.start();
+      }
+    });
+    JButton shortenButton2 = new JButton("Shorten - Front Tracking");
+    shortenButton2.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        textArea.setText("Shortening with front tracking");
+        try {
+          display.shortenCalled(curveNum, 2);
         }
         catch (Exception ex) {
           System.out.println(ex.getMessage());
@@ -118,15 +160,14 @@ public class Demo {
     JButton refreshButton = new JButton("Refresh");
     refreshButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        frame.getContentPane().validate();
-        frame.getContentPane().repaint();
-        display.drawCurve(4);
-        // display.drawPoints(4)
+        display.clearScreen();
+        display.drawCurve(curveNum+3);
       }
     });
     buttons.add(editButton);
     buttons.add(drawButton);
-    buttons.add(shortenButton);
+    buttons.add(shortenButton1);
+    buttons.add(shortenButton2);
     buttons.add(convoluteButton);
     buttons.add(refreshButton);
     buttonPanel.add(buttons);
@@ -150,7 +191,8 @@ public class Demo {
     checkBoxes.setFocusable(false);
     editButton.setFocusable(false);
     drawButton.setFocusable(false);
-    shortenButton.setFocusable(false);
+    shortenButton1.setFocusable(false);
+    shortenButton2.setFocusable(false);
     convoluteButton.setFocusable(false);
     refreshButton.setFocusable(false);
     buttons.setFocusable(false);
@@ -159,10 +201,43 @@ public class Demo {
     display.requestFocus();
     display.addKeyListener(new KeyLis());
     display.addMouseListener(new MouseLis());
+    display.addMouseMotionListener(new MouseMotionListener() {
+      @Override
+      public void mouseMoved(MouseEvent e) {
+        int x = e.getX();
+        int y = e.getY();
+        // only display a hand if the cursor is over the items
+        try {
+          if (editting) {
+            if (display.onPoint(x, y, curveNum) != null) {
+              display.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            }
+            else {
+              display.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+            }
+          }
+        }
+        catch(NullPointerException ex) {
+          // do nothing - this triggers when you move mouse but haven't selected a curve
+        }
+      }
+
+      @Override
+      public void mouseDragged(MouseEvent e) {
+        //   try {
+        //     if (editting && holdingPoint) {
+        //       display.movePoint(e.getX(), e.getY(), curveNum, editPoint);
+        //     }
+        //   }
+        //   catch(NullPointerException ex) {
+        //     // do nothing - this triggers when you move mouse but haven't selected a curve
+        //   }
+      }
+    });
     display.setGraphics(display.getGraphics());
   }
 
-  // Key listener class for swing
+  // Key listener class for display
   private class KeyLis extends KeyAdapter {
     @Override
     public void keyPressed(KeyEvent e) {
@@ -185,19 +260,56 @@ public class Demo {
     }
   }
 
-  // Mouse listener class for swing
+  // Mouse listener class for display
   private class MouseLis extends MouseAdapter {
     @Override
     public void mousePressed(MouseEvent e) {
-      if(display.addPoint((int)e.getX(), (int)e.getY(), curveNum)) {
-        textArea.setText("Added point.");
+      if (!editting) {
+        if(display.addPoint((int)e.getX(), (int)e.getY(), curveNum)) {
+          textArea.setText("Added point.");
+        }
+        else {
+          textArea.setText("Select a curve first!");
+        }
       }
       else {
-        textArea.setText("Select a curve first!");
+        try {
+          if (editting && !holdingPoint) {
+            Point candidate = display.onPoint((int)e.getX(), (int)e.getY(), curveNum);
+            textArea.setText("Click on this point's new location.");
+            if (candidate != null) {
+              holdingPoint = true;
+              editPoint = candidate;
+            }
+          }
+          else if (editting && holdingPoint) {
+            display.updatePoints(e.getX(), e.getY(), curveNum, editPoint);
+            holdingPoint = false;
+            editPoint = null;
+            textArea.setText("Point moved");
+            // display.movePoint(e.getX(), e.getY(), curveNum, editPoint);
+          }
+        }
+        catch(NullPointerException ex) {
+          // do nothing - this triggers when you move mouse but haven't selected a curve
+        }
       }
     }
-  }
 
+    // @Override
+    // public void mouseReleased(MouseEvent e) {
+    //   try {
+    //     if (editting) {
+    //       display.updatePoints((int)e.getX(), (int)e.getY(), curveNum, editPoint);
+    //       holdingPoint = false;
+    //       editPoint = null;
+    //     }
+    //   }
+    //   catch(IndexOutOfBoundsException ex) {
+    //     // do nothing - triggers when you release mouse but didn't click on a point
+    //   }
+    // }
+  }
 
   public static void main(String[] args) {
     Demo demo = new Demo();

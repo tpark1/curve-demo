@@ -1,11 +1,10 @@
 # curve-demo
 
 ## todo
-* Animations still not smooth :(
-* Change rogue point criteria
-* I think points near the first ctrl point are always wrong (cfs) b/c slopes are weirder
-* Editting UI function
-* Put options to do both versions of curve shortening
+* external file/saving current layout
+* Make videos on how to use
+* Write up
+* test animations for curve shortening 
 
 
 ## notes
