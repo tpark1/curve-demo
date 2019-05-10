@@ -8,6 +8,7 @@ import java.awt.*;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.Iterator;
+import javafx.util.Pair;
 import java.io.*;
 
 public class Display extends JPanel {
@@ -227,10 +228,12 @@ public class Display extends JPanel {
     return new Point((int)x, (int)y);
   }
 
-  private ArrayList<Point> randomAttempt(ArrayList<Point> curve) throws IOException {
+  // always points inwards
+  private ArrayList<Point> naive(ArrayList<Point> curve) throws IOException {
     ArrayList<Point> newCurve = new ArrayList<>();
 
     double slopes[] = new double[curve.size()];
+    boolean bools[] = new boolean[curve.size()];
 
     BufferedWriter writer = new BufferedWriter(new FileWriter("D:\\New folder\\swarthmore\\senior\\geometry\\curve-demo\\temp.txt"));
     String fileContent = "";
@@ -239,7 +242,93 @@ public class Display extends JPanel {
     double curvatures[] = new double[curve.size()];
     for (int i = 0; i<curve.size(); i++) {
       curvatures[i] = UtilityFunctions.curvature(curve, i);
-      slopes[i] = UtilityFunctions.test(curve, i);
+      slopes[i] = (UtilityFunctions.computeTangentVector(curve, i)).getKey();
+      bools[i] = (UtilityFunctions.computeTangentVector(curve, i)).getValue();
+    }
+
+    curvatures = UtilityFunctions.rescale(curvatures, 10.0);
+
+
+    for (int i = 0; i<curve.size(); i++) {
+      Point2D.Double tangent = UtilityFunctions.getVector(slopes[i], 10);
+
+      Point2D.Double perp;
+      if (bools[i]) {
+         perp = new Point2D.Double(-1.0 * tangent.y, tangent.x);
+      }
+      else {
+        perp = new Point2D.Double(tangent.y, -1.0 * tangent.x);
+      }
+
+
+      double scalar = 0.5;
+      Point scaledNormal = new Point((int)(perp.x * scalar), (int)(perp.y * scalar));
+
+      fileContent += "\n";
+      fileContent += Math.round(slopes[i] * 100)/100.0;
+      fileContent += " , ";
+      fileContent += tangent;
+      fileContent += " , ";
+      fileContent += perp;
+      fileContent += " , ";
+      fileContent += scaledNormal;
+
+      newCurve.add(UtilityFunctions.add(curve.get(i), scaledNormal));
+    }
+    writer.write(fileContent);
+    writer.close();
+
+    // double curvature = UtilityFunctions.curvature(curve, i);
+
+    // check for redundant points
+    Iterator it = newCurve.iterator();
+    Point previous = null;
+    while (it.hasNext()) {
+      if (it.next() == previous) {
+        previous = (Point)it.next();
+        it.remove();
+        break;
+      }
+    }
+    // check for rogue points
+    ArrayList<Point> finalCurve = new ArrayList<>();
+    for (int i = 0; i<newCurve.size(); i++) {
+      double distance1;
+      double distance2;
+      if (i == 0) {
+        distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(newCurve.size()-2));
+        distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i+1));
+      }
+      else if (i == (newCurve.size()-1)) {
+        distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i-1));
+        distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(1));
+      }
+      else {
+        distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i-1));
+        distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i+1));
+      }
+      if (!((Math.abs(distance1) > 10) || (Math.abs(distance2) > 10))) {
+        finalCurve.add(newCurve.get(i));
+      }
+    }
+    return finalCurve;
+  }
+
+  private ArrayList<Point> randomAttempt(ArrayList<Point> curve) throws IOException {
+    ArrayList<Point> newCurve = new ArrayList<>();
+
+    double slopes[] = new double[curve.size()];
+    boolean bools[] = new boolean[curve.size()];
+
+    BufferedWriter writer = new BufferedWriter(new FileWriter("D:\\New folder\\swarthmore\\senior\\geometry\\curve-demo\\temp.txt"));
+    String fileContent = "";
+
+    // scale curvatures
+    double curvatures[] = new double[curve.size()];
+    for (int i = 0; i<curve.size(); i++) {
+      curvatures[i] = UtilityFunctions.curvature(curve, i);
+      slopes[i] = (UtilityFunctions.computeTangentVector(curve, i)).getKey();
+      bools[i] = (UtilityFunctions.computeTangentVector(curve, i)).getValue();
     }
 
     curvatures = UtilityFunctions.rescale(curvatures, 10.0);
@@ -257,13 +346,17 @@ public class Display extends JPanel {
 
       Point2D.Double Ta = UtilityFunctions.getVector(TaSlope, 10);
       Point2D.Double Tb = UtilityFunctions.getVector(TbSlope, 10);
+      if (!bools[i]) {
+        Ta = UtilityFunctions.scale2(Ta, -1.0);
+        Tb = UtilityFunctions.scale2(Tb, -1.0);
+      }
 
       Point2D.Double normal = UtilityFunctions.subtract(Ta, Tb);
-      Point2D.Double unitNormal = UtilityFunctions.normalize(normal, UtilityFunctions.magnitude(normal));
+      Point2D.Double unitNormal = UtilityFunctions.scale2(normal, UtilityFunctions.magnitude(normal));
 
       // double normalVectorSlope = UtilityFunctions.perpendicular(slopes[i]);
       // Point2D.Double normal = new Point2D.Double(1.0, normalVectorSlope);
-      // Point2D.Double unitNormal = UtilityFunctions.normalize(normal, UtilityFunctions.magnitude(normal));
+      // Point2D.Double unitNormal = UtilityFunctions.scale2(normal, UtilityFunctions.magnitude(normal));
       // double scalar = curvatures[i];
       double scalar = 20;
       Point scaledNormal = new Point((int)(unitNormal.x * scalar), (int)(unitNormal.y * scalar));
@@ -468,7 +561,7 @@ public class Display extends JPanel {
     // first compute slopes of curve2
     double slopes[] = new double[curve2.size()];
     for (int i = 0; i<curve2.size(); i++) {
-      slopes[i] = UtilityFunctions.test(curve2, i);
+      slopes[i] = (UtilityFunctions.computeTangentVector(curve2, i)).getKey();
     }
 
     // BufferedWriter writer = new BufferedWriter(new FileWriter("D:\\New folder\\swarthmore\\senior\\geometry\\curve-demo\\temp.txt"));

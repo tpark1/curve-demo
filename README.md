@@ -1,16 +1,16 @@
 # curve-demo
 
 ## todo
-* Curve shortening flow!
-* Epsilon tuning
 * Animations still not smooth :(
-* rename test in UtilityFunctions
-  * abstract out the t in test 
+* Change rogue point criteria
+* I think points near the first ctrl point are always wrong (cfs) b/c slopes are weirder
+
 
 ## notes
 * convolution sometimes fails on vertical slope comparisons - ie the control point will
 evaluate to +/-14 or something but the curve only gets up to +/-5
+* For shortening to work, curve MUST be drawn in counterclockwise order
 
 
-csf goes rightward only
-think I'm going to go back to front tracking
+shortening naivelly works
+work on shortening the right way

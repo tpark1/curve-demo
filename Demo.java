@@ -26,10 +26,12 @@ public class Demo {
       public void actionPerformed(ActionEvent e) {
         try {
           display.shortenCalled(curveNum);
-
+          // display.repaint();
         }
         catch (Exception ex) {
+          System.out.println("fail");
           System.out.println(ex.getMessage());
+          ex.printStackTrace();
         }
       }
     });
@@ -95,7 +97,6 @@ public class Demo {
     shortenButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
         textArea.setText("Shortening");
-
         try {
           display.shortenCalled(curveNum);
         }
