@@ -11,8 +11,13 @@ Once you have cloned the repo and moved the apache jar to the source directory, 
 
 The GUI should now pop up.
 
+## Interacting with the demo
 Check the `How-to-use` directory for example videos.
 
+There are the following keyboard shortcuts:
+* `g`: draw current curve
+* `c`: clear points and curves
+* `q`: quit the application
 
 ## Future features
 * Save current points to text file.

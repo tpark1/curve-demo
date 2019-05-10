@@ -138,10 +138,6 @@ public class Display extends JPanel {
   }
 
   public void updatePoints(int x, int y, int curveNum, Point p) {
-    // visual updates
-    Graphics2D g2d = (Graphics2D) g;
-    g2d.setColor(this.getBackground());
-    g2d.fillOval(x-offset, y-offset, 2*controlPointRadius, 2*controlPointRadius);
     // modify lists
     if (curveNum == 1) {
       int index = points1.indexOf(p);
@@ -163,6 +159,7 @@ public class Display extends JPanel {
         points2.set(points2.indexOf(p), new Point(x,y));
       }
     }
+    // redraw points and curves
     clearScreen();
     drawPoints(1);
     drawPoints(2);
@@ -197,13 +194,19 @@ public class Display extends JPanel {
       return;
     }
     if (curveNum == 1) {
-      points1.add(points1.get(0));
+      if (!((points1.get(0)).equals(points1.get(points1.size()-1)))) {
+        points1.add(points1.get(0));
+      }
     }
     else if (curveNum == 2) {
-      points2.add(points2.get(0));
+      if (!((points2.get(0)).equals(points2.get(points2.size()-1)))) {
+        points2.add(points2.get(0));
+      }
     }
     else if (curveNum == 3) {
-      points3.add(points3.get(0));
+      if (!((points3.get(0)).equals(points3.get(points3.size()-1)))) {
+        points3.add(points3.get(0));
+      }
     }
   }
 
