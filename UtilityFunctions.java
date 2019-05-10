@@ -9,7 +9,6 @@ public class UtilityFunctions {
   static int r = 10;
   static int t = 40;
   static double epsilon = 0.001f;
-  // static double mean = 0;
   static double sd = 200;
   static final double MAX_VALUE = Double.MAX_VALUE;
 
@@ -46,24 +45,17 @@ public class UtilityFunctions {
   }
 
   public static Point2D.Double scale2(Point2D.Double p, double n) {
-    // if (n == 0) {
-    //   return new Point2D.Double();
-    // }
     return new Point2D.Double(p.x/n, p.y/n);
   }
 
   public static Point2D.Double getVector(double slope, double range) {
     if (slope == MAX_VALUE) {
-      return new Point2D.Double(0, 10);
+      return new Point2D.Double(0, range);
     }
     Point2D.Double vector = new Point2D.Double(1.0, slope);
     Point2D.Double unitVector = scale2(vector, UtilityFunctions.magnitude(vector));
     return new Point2D.Double(unitVector.x * range, unitVector.y * range);
   }
-
-  // public static Point divide(Point p1, double x) {
-  //   return new Point((int)p1.x/x, (int)p1.y/x);
-  // }
 
   // Factorial function
   public static int factorial(int n) {
@@ -121,7 +113,6 @@ public class UtilityFunctions {
     for (int i = 0; i<list.length; i++) {
       output[i] = (list[i] / localMax) * max;
     }
-
     return output;
   }
 
@@ -152,11 +143,6 @@ public class UtilityFunctions {
     for (int i = 0; i<coefficients.length; i++) {
       coefficients[i] = coefficients[i]/total;
     }
-    // System.out.println("coefficients");
-    // for (int i = 0; i<coefficients.length; i++) {
-    //   System.out.println(coefficients[i]);
-    // }
-
     Point2D.Double sum = new Point2D.Double(0,0);
     for (int i = 0; i<coefficients.length; i++) {
       if ( min+i < 0) {
@@ -170,60 +156,42 @@ public class UtilityFunctions {
       }
     }
     return toPoint(sum);
-
-
-
-    // System.out.println("coefficients");
-    // for (double d : coefficients) {
-    //   System.out.println(d);
-    // }
-
-
-    // if () {
-    //
-    // }
-    // else if () {
-    //
-    // }
-    // else {
-    //
-    // }
   }
 
-  public static double curvature(ArrayList<Point> curve, int x) {
-    Point twiceDisplacement;
-    Point laplacian;
-    if (x < (r + 1)) {
-      twiceDisplacement = subtract2(curve.get(x+r),curve.get(curve.size()-1-x));
-      laplacian = add(scale(curve.get(r), 2), add(curve.get(x+r), curve.get(curve.size()-1-x)));
-    }
-    else if (x > curve.size()-1-r) {
-      twiceDisplacement = subtract2(curve.get(x+r-curve.size()),curve.get(x-r));
-      laplacian = add(scale(curve.get(r), 2), add(curve.get(x+r-curve.size()), curve.get(x-r)));
-    }
-    else {
-      twiceDisplacement = subtract2(curve.get(x+r),curve.get(x-r));
-      laplacian = add(scale(curve.get(r), 2), add(curve.get(x+r), curve.get(x-r)));
-    }
-    double dr2 = Math.pow(magnitude2(twiceDisplacement), 2) * 0.25;
-    return Math.abs(0.5 * crossProductMagnitude(twiceDisplacement, laplacian)) * Math.pow(dr2, -1.5);
-  }
-
-  // public static double[] curvature2(ArrayList<Point> curve) {
-  //   double output[] = new double[curve.size()];
-  //   ArrayList<Point> firstD = new ArrayList<>(curve.size());
-  //   for (int i = 0; i<curve.size(); i++) {
-  //     firstD.add(computeTangentVector(curve, i).getKey());
+  // public static double curvature(ArrayList<Point> curve, int x) {
+  //   Point twiceDisplacement;
+  //   Point laplacian;
+  //   if (x < (r + 1)) {
+  //     twiceDisplacement = subtract2(curve.get(x+r),curve.get(curve.size()-1-x));
+  //     laplacian = add(scale(curve.get(r), 2), add(curve.get(x+r), curve.get(curve.size()-1-x)));
   //   }
-  //   ArrayList<Point> secondD = new ArrayList<>(curve.size());
-  //   for (int i = 0; i<curve.size(); i++) {
-  //     secondD.add(computeTangentVector(firstD, i).getKey());
+  //   else if (x > curve.size()-1-r) {
+  //     twiceDisplacement = subtract2(curve.get(x+r-curve.size()),curve.get(x-r));
+  //     laplacian = add(scale(curve.get(r), 2), add(curve.get(x+r-curve.size()), curve.get(x-r)));
   //   }
-  //   for (int i = 0; i<curve.size(); i++) {
-  //     output[i] = Math.abs(secondD.get(i)) / Math.abs(firstD.get(i));
+  //   else {
+  //     twiceDisplacement = subtract2(curve.get(x+r),curve.get(x-r));
+  //     laplacian = add(scale(curve.get(r), 2), add(curve.get(x+r), curve.get(x-r)));
   //   }
-  //   return output;
+  //   double dr2 = Math.pow(magnitude2(twiceDisplacement), 2) * 0.25;
+  //   return Math.abs(0.5 * crossProductMagnitude(twiceDisplacement, laplacian)) * Math.pow(dr2, -1.5);
   // }
+
+  public static double[] curvature2(ArrayList<Point> curve) {
+    double output[] = new double[curve.size()];
+    ArrayList<Point> firstD = new ArrayList<>(curve.size());
+    for (int i = 0; i<curve.size(); i++) {
+      firstD.add(toPoint(getVector(computeTangentVector(curve, i).getKey(), 10)));
+    }
+    ArrayList<Double> secondD = new ArrayList<>(curve.size());
+    for (int i = 0; i<curve.size(); i++) {
+      secondD.add(computeTangentVector(firstD, i).getKey());
+    }
+    for (int i = 0; i<curve.size(); i++) {
+      output[i] = Math.abs(secondD.get(i)) / Math.abs(magnitude2(firstD.get(i)));
+    }
+    return output;
+  }
 
   public static Point2D.Double center(ArrayList<Point> points) {
     double x = 0;
@@ -246,10 +214,11 @@ public class UtilityFunctions {
     }
   }
 
+  // Compute slope of tangent of point i in curve
   public static Pair<Double, Boolean> computeTangentVector(ArrayList<Point> curve, int i) {
     Point p1 = null;
     Point p2 = null;
-    if (i < t+1) {
+    if (i < t) {
       p1 = curve.get(i+t);
       p2 = curve.get(curve.size()-1-i);
     }

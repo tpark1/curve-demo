@@ -37,9 +37,8 @@ public class Demo {
           display.repaint();
         }
         catch (Exception ex) {
-          System.out.println("fail");
-          System.out.println(ex.getMessage());
-          ex.printStackTrace();
+          timer1.stop();
+          textArea.setText("Shortening complete.\n");
         }
       }
     });
@@ -53,9 +52,8 @@ public class Demo {
           display.repaint();
         }
         catch (Exception ex) {
-          System.out.println("fail");
-          System.out.println(ex.getMessage());
-          ex.printStackTrace();
+          timer2.stop();
+          textArea.setText("Shortening complete.\n");
         }
       }
     });
@@ -100,7 +98,7 @@ public class Demo {
     buttonPanel.add(checkBoxes);
     // buttons
     JPanel buttons = new JPanel();
-    buttons.setLayout(new GridLayout(4,2, 10,10));
+    buttons.setLayout(new GridLayout(5,2, 10,10));
     buttons.setBackground(sidePanelBackground);
     JCheckBox editButton = new JCheckBox("Edit");
     editButton.setBackground(sidePanelBackground);
@@ -148,6 +146,7 @@ public class Demo {
         }
         catch (Exception ex) {
           System.out.println(ex.getMessage());
+          ex.printStackTrace();
         }
       }
     });
@@ -191,6 +190,13 @@ public class Demo {
         display.drawCurve(curveNum+3);
       }
     });
+    JButton clearButton = new JButton("Clear");
+    clearButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        display.clearFrame();
+        textArea.setText("Points and curves cleared.\n");
+      }
+    });
     buttons.add(editButton);
     buttons.add(drawButton);
     buttons.add(shortenButton1);
@@ -199,6 +205,7 @@ public class Demo {
     buttons.add(shortenButton4);
     buttons.add(convoluteButton);
     buttons.add(refreshButton);
+    buttons.add(clearButton);
     buttonPanel.add(buttons);
 
     // text area to display messages at the bottom
@@ -226,6 +233,7 @@ public class Demo {
     shortenButton4.setFocusable(false);
     convoluteButton.setFocusable(false);
     refreshButton.setFocusable(false);
+    clearButton.setFocusable(false);
     buttons.setFocusable(false);
     textArea.setFocusable(false);
     buttonPanel.setFocusable(false);
@@ -259,7 +267,7 @@ public class Demo {
     display.setGraphics(display.getGraphics());
   }
 
-  // Key listener class for display
+  // Some keyboard shortcuts
   private class KeyLis extends KeyAdapter {
     @Override
     public void keyPressed(KeyEvent e) {

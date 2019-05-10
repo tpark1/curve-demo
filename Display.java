@@ -270,6 +270,9 @@ public class Display extends JPanel {
 
   private ArrayList<Point> frontTracking(ArrayList<Point> curve) throws IOException {
     ArrayList<Point> newCurve = new ArrayList<>();
+    if (curve.size() == 0) {
+      return newCurve;
+    }
 
     double slopes[] = new double[curve.size()];
     boolean bools[] = new boolean[curve.size()];
@@ -278,9 +281,10 @@ public class Display extends JPanel {
     String fileContent = "";
 
     // scale curvatures
-    double curvatures[] = new double[curve.size()];
+    // double curvatures[] = new double[curve.size()];
+    double curvatures[] = UtilityFunctions.curvature2(curve);
     for (int i = 0; i<curve.size(); i++) {
-      curvatures[i] = UtilityFunctions.curvature(curve, i);
+      // curvatures[i] = UtilityFunctions.curvature(curve, i);
       slopes[i] = (UtilityFunctions.computeTangentVector(curve, i)).getKey();
       bools[i] = (UtilityFunctions.computeTangentVector(curve, i)).getValue();
     }
@@ -289,7 +293,6 @@ public class Display extends JPanel {
     for (int i = 0; i<curvatures.length; i++) {
       curvatures[i] += 3;
     }
-
 
     for (int i = 0; i<curve.size(); i++) {
       double TaSlope = slopes[i];
@@ -341,42 +344,28 @@ public class Display extends JPanel {
     writer.write(fileContent);
     writer.close();
 
-    // remove redundant points
-    return newCurve;
-    // Iterator it = newCurve.iterator();
-    // Point previous = null;
-    // while (it.hasNext()) {
-    //   if (it.next() == previous) {
-    //     previous = (Point)it.next();
-    //     it.remove();
-    //     break;
-    //   }
-    // }
-    // return newCurve;
-    // // check for rogue points
-    // ArrayList<Point> finalCurve = new ArrayList<>();
-    // for (int i = 0; i<newCurve.size(); i++) {
-    //   double distance1;
-    //   double distance2;
-    //   if (i == 0) {
-    //     distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(newCurve.size()-2));
-    //     distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i+1));
-    //   }
-    //   else if (i == (newCurve.size()-1)) {
-    //     distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i-1));
-    //     distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(1));
-    //   }
-    //   else {
-    //     distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i-1));
-    //     distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i+1));
-    //   }
-    //   if (!((Math.abs(distance1) > 10) && (Math.abs(distance2) > 10))) {
-    //     finalCurve.add(newCurve.get(i));
-    //   }
-    // }
-
-
-    // return finalCurve;
+    // check for rogue points
+    ArrayList<Point> finalCurve = new ArrayList<>();
+    for (int i = 0; i<newCurve.size(); i++) {
+      double distance1;
+      double distance2;
+      if (i == 0) {
+        distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(newCurve.size()-2));
+        distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i+1));
+      }
+      else if (i == (newCurve.size()-1)) {
+        distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i-1));
+        distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(1));
+      }
+      else {
+        distance1 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i-1));
+        distance2 = UtilityFunctions.distance(UtilityFunctions.convert(newCurve.get(i)), newCurve.get(i+1));
+      }
+      if (!((Math.abs(distance1) > 10) && (Math.abs(distance2) > 10))) {
+        finalCurve.add(newCurve.get(i));
+      }
+    }
+    return finalCurve;
   }
 
   private ArrayList<Point> resampling(ArrayList<Point> curve) throws IOException {
@@ -403,6 +392,7 @@ public class Display extends JPanel {
     return newCurve;
   }
 
+  // true means we are done
   public boolean shortenCalled(int curveNum, int method) throws IOException {
     ArrayList<Point> newCurve;
     if (method == 1) {
@@ -410,6 +400,9 @@ public class Display extends JPanel {
     }
     else {
       newCurve = frontTracking(chooseCurve(curveNum));
+      if (newCurve.size() == 0) {
+        return true;
+      }
     }
     boolean output = false;
     if (curveNum == 1) {
